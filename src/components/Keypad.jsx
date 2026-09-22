@@ -35,8 +35,8 @@ export default function Keypad({
   }
 
   return (
-    <div className="w-full max-w-[480px] mx-auto mt-4 select-none">
-      <div className="grid grid-cols-9 gap-1.5 sm:gap-2">
+    <div className="w-full max-w-[min(100vw-1.5rem,480px,52vh)] mx-auto mt-2 sm:mt-3 select-none touch-manipulation">
+      <div className="grid grid-cols-9 gap-1 sm:gap-2">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => {
           const count = digitCounts[num];
           const isComplete = count >= 9;
@@ -45,16 +45,16 @@ export default function Keypad({
             <button
               key={num}
               onClick={() => onInputDigit(num)}
-              className={`relative flex flex-col items-center justify-center py-2 sm:py-3 rounded-xl border font-bold transition-all active:scale-90 shadow-sm ${
+              className={`relative flex flex-col items-center justify-center py-2 sm:py-3 rounded-xl border font-bold transition-all active:scale-90 shadow-xs touch-manipulation ${
                 isComplete && autoHighlight
                   ? 'bg-slate-100 border-slate-200 text-slate-300'
                   : 'bg-white border-slate-200 text-slate-800 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600'
               }`}
             >
-              <span className="text-lg sm:text-xl font-bold leading-none">{num}</span>
+              <span className="text-base sm:text-xl font-bold leading-none">{num}</span>
               {autoHighlight && (
                 <span
-                  className={`text-[9px] font-semibold mt-0.5 leading-none ${
+                  className={`text-[8px] sm:text-[10px] font-semibold mt-0.5 leading-none ${
                     isComplete ? 'text-slate-300' : 'text-slate-400'
                   }`}
                 >
@@ -67,24 +67,24 @@ export default function Keypad({
       </div>
 
       {/* Auxiliary Buttons below numpad: Notes Mode toggle & Erase */}
-      <div className="grid grid-cols-2 gap-2 mt-2">
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
         <button
           onClick={onToggleNotes}
-          className={`flex items-center justify-center space-x-2 py-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-95 shadow-sm ${
+          className={`flex items-center justify-center space-x-1.5 sm:space-x-2 py-2 sm:py-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation ${
             isNotesMode
-              ? 'bg-indigo-600 border-indigo-600 text-white'
+              ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-500/20'
               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
           }`}
         >
-          <Pencil className="w-4 h-4" />
+          <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
           <span>{isNotesMode ? 'Notes Mode Active' : 'Enable Notes'}</span>
         </button>
 
         <button
           onClick={onErase}
-          className="flex items-center justify-center space-x-2 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-xs font-semibold transition-all active:scale-95 shadow-sm"
+          className="flex items-center justify-center space-x-1.5 sm:space-x-2 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation"
         >
-          <Delete className="w-4 h-4" />
+          <Delete className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
           <span>Erase Cell</span>
         </button>
       </div>

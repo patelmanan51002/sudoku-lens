@@ -97,7 +97,7 @@ export default function SudokuBoard({
   const selectedValue = selectedCell ? grid[selectedCell.r][selectedCell.c] : null;
 
   return (
-    <div className="relative inline-block w-full max-w-[480px] mx-auto select-none">
+    <div className="relative w-full max-w-[min(100vw-1.5rem,480px,52vh)] mx-auto select-none touch-manipulation">
       {/* Hidden input to bring up mobile native number keyboard */}
       <input
         ref={hiddenInputRef}
@@ -122,8 +122,7 @@ export default function SudokuBoard({
 
       {/* 9x9 Board Frame */}
       <div
-        className="grid grid-cols-9 grid-rows-9 border-2 border-slate-900 bg-white rounded-xl shadow-xl overflow-hidden"
-        style={{ aspectRatio: '1 / 1' }}
+        className="grid grid-cols-9 grid-rows-9 border-[2px] sm:border-[3px] border-slate-900 bg-white rounded-xl shadow-lg sm:shadow-xl overflow-hidden aspect-square"
       >
         {Array.from({ length: 9 }).map((_, r) =>
           Array.from({ length: 9 }).map((_, c) => {

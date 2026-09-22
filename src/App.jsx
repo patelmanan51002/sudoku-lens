@@ -524,7 +524,7 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 py-4 sm:py-6 px-3 sm:px-6">
+      <main className="flex-1 pt-2 sm:pt-6 pb-24 md:pb-8 px-2 sm:px-6">
         {activeTab === 'play' && (
           <div className="max-w-2xl mx-auto flex flex-col items-center">
             {/* Validation Banner if error or feedback */}

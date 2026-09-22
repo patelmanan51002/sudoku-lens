@@ -52,41 +52,41 @@ export default function ControlPanel({
   };
 
   return (
-    <div className="w-full max-w-[480px] mx-auto mt-4 space-y-3">
+    <div className="w-full max-w-[min(100vw-1.5rem,480px,52vh)] mx-auto mt-2 sm:mt-3 space-y-2 sm:space-y-2.5">
       {/* Top Bar: Timer, Status, Date */}
-      <div className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-center justify-between">
+      <div className="bg-white rounded-xl p-2 sm:p-2.5 border border-slate-200 shadow-xs flex items-center justify-between">
         {/* Timer or Completion Badge */}
         {puzzleStatus === 'Finished' ? (
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-emerald-600" />
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
             </div>
             <div>
-              <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Completed In</div>
-              <div className="text-base font-bold font-mono text-emerald-700 tracking-wider">
+              <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Completed In</div>
+              <div className="text-xs sm:text-sm font-bold font-mono text-emerald-700 tracking-wider">
                 {formatHumanDuration(completionTime || elapsedTime)}
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div>
-              <div className="text-xs text-slate-400 font-medium">Time Elapsed</div>
-              <div className="text-base font-bold font-mono text-slate-800 tracking-wider">
+              <div className="text-[10px] text-slate-400 font-medium">Time Elapsed</div>
+              <div className="text-xs sm:text-sm font-bold font-mono text-slate-800 tracking-wider">
                 {formatSeconds(elapsedTime)}
               </div>
             </div>
             <button
               onClick={onTogglePause}
-              className={`p-1.5 rounded-lg border text-slate-600 hover:text-slate-900 transition-colors ${
+              className={`p-1 sm:p-1.5 rounded-lg border text-slate-600 hover:text-slate-900 transition-colors ${
                 isPaused ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-slate-50 border-slate-200'
               }`}
               title={isPaused ? 'Resume Timer' : 'Pause Timer'}
             >
-              {isPaused ? <Play className="w-3.5 h-3.5 fill-amber-700" /> : <Pause className="w-3.5 h-3.5" />}
+              {isPaused ? <Play className="w-3 h-3 fill-amber-700" /> : <Pause className="w-3 h-3" />}
             </button>
           </div>
         )}
@@ -98,69 +98,69 @@ export default function ControlPanel({
               setDateValue(toInputDateTimeValue(puzzleDate));
               setShowDatePicker(true);
             }}
-            className="group flex items-center space-x-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors"
+            className="group flex items-center space-x-1 text-[11px] sm:text-xs text-slate-500 hover:text-blue-600 transition-colors ml-auto"
             title="Click to change puzzle date"
           >
-            <Calendar className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600" />
-            <span className="font-medium underline decoration-dotted underline-offset-2">
+            <Calendar className="w-3 h-3 text-slate-400 group-hover:text-blue-600 shrink-0" />
+            <span className="font-medium underline decoration-dotted underline-offset-2 truncate max-w-[120px] sm:max-w-none">
               {formatDateTime(puzzleDate)}
             </span>
           </button>
-          <div className="text-[11px] font-semibold text-slate-400 mt-0.5">
+          <div className="text-[10px] sm:text-[11px] font-semibold text-slate-400 mt-0.5">
             Filled: <span className="text-blue-600 font-bold">{filledCount}</span> / 81
           </div>
         </div>
       </div>
 
       {/* Action Buttons: Undo, Redo, Notes, Reset */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
         <button
           onClick={onUndo}
           disabled={!canUndo}
-          className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs font-semibold transition-all ${
+          className={`flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all touch-manipulation ${
             canUndo
-              ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-95 shadow-sm'
+              ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-95 shadow-xs'
               : 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
           }`}
           title="Undo move (Ctrl+Z)"
         >
-          <RotateCcw className="w-4 h-4 mb-1" />
+          <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5" />
           <span>Undo</span>
         </button>
 
         <button
           onClick={onRedo}
           disabled={!canRedo}
-          className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs font-semibold transition-all ${
+          className={`flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all touch-manipulation ${
             canRedo
-              ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-95 shadow-sm'
+              ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-95 shadow-xs'
               : 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
           }`}
           title="Redo move (Ctrl+Y)"
         >
-          <RotateCw className="w-4 h-4 mb-1" />
+          <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5" />
           <span>Redo</span>
         </button>
 
         <button
           onClick={onToggleNotes}
-          className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs font-semibold transition-all active:scale-95 shadow-sm ${
+          className={`flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation ${
             isNotesMode
               ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-500/20'
               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
           }`}
           title="Toggle Pencil/Notes mode (N)"
         >
-          <Pencil className="w-4 h-4 mb-1" />
+          <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5" />
           <span>{isNotesMode ? 'Notes ON' : 'Pencil'}</span>
         </button>
 
         <button
           onClick={() => setShowResetConfirm(true)}
-          className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-xs font-semibold transition-all active:scale-95 shadow-sm"
+          className="flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-[11px] sm:text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation"
           title="Reset board to initial puzzle"
         >
-          <RefreshCw className="w-4 h-4 mb-1" />
+          <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5" />
           <span>Reset</span>
         </button>
       </div>
@@ -205,13 +205,13 @@ export default function ControlPanel({
         </div>
       ) : (
         /* Validate Sudoku Option (User Requirement: option after all empty places got filled) */
-        <div className="pt-1">
+        <div className="pt-0.5">
           <button
             onClick={onValidate}
             disabled={!isComplete}
-            className={`w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 transition-all shadow-md ${
+            className={`w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-1.5 sm:space-x-2 transition-all shadow-xs touch-manipulation ${
               isComplete
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-500/25 animate-pulse cursor-pointer'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-500/25 animate-pulse cursor-pointer active:scale-95'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-200'
             }`}
             title={
@@ -220,11 +220,11 @@ export default function ControlPanel({
                 : `Fill all ${remainingCount} remaining cells to validate.`
             }
           >
-            <CheckCircle2 className="w-5 h-5" />
-            <span>
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+            <span className="truncate">
               {isComplete
                 ? 'Validate Sudoku (All Filled!)'
-                : `Validate Sudoku (${remainingCount} empty ${remainingCount === 1 ? 'place' : 'places'} left)`}
+                : `Validate (${remainingCount} empty ${remainingCount === 1 ? 'place' : 'places'} left)`}
             </span>
           </button>
         </div>

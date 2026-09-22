@@ -49,19 +49,18 @@ export default function SudokuCell({
       onClick={onClick}
       role="gridcell"
       aria-selected={isSelected}
-      className={`relative flex items-center justify-center cursor-pointer transition-colors duration-75 select-none
+      className={`relative flex items-center justify-center cursor-pointer transition-colors duration-75 select-none touch-manipulation aspect-square
         border-r border-b border-slate-300
-        ${isRightThick ? 'border-r-2 border-r-slate-800' : ''}
-        ${isBottomThick ? 'border-b-2 border-b-slate-800' : ''}
-        ${isSelected ? 'z-10 ring-2 ring-blue-600 ring-inset shadow-inner' : ''}
+        ${isRightThick ? 'border-r-[2px] sm:border-r-[3px] border-r-slate-900' : ''}
+        ${isBottomThick ? 'border-b-[2px] sm:border-b-[3px] border-b-slate-900' : ''}
+        ${isSelected ? 'z-10 ring-2 sm:ring-3 ring-blue-600 ring-inset shadow-inner' : ''}
         ${bgClass}
       `}
-      style={{ aspectRatio: '1 / 1' }}
     >
       {value > 0 ? (
         <span
-          className={`text-lg sm:text-2xl md:text-3xl select-none leading-none transition-transform
-            ${isGiven ? 'font-bold text-slate-900' : 'font-semibold text-blue-600'}
+          className={`text-base sm:text-2xl md:text-3xl select-none leading-none transition-transform font-bold
+            ${isGiven ? 'text-slate-900' : 'text-blue-600'}
             ${autoHighlight && isConflict ? '!text-rose-600' : ''}
           `}
         >
@@ -73,8 +72,8 @@ export default function SudokuCell({
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
             <span
               key={num}
-              className={`flex items-center justify-center text-[9px] sm:text-[11px] font-semibold leading-none ${
-                notes.includes(num) ? 'text-slate-600' : 'text-transparent'
+              className={`flex items-center justify-center text-[7px] xs:text-[8px] sm:text-[10px] font-bold leading-none ${
+                notes.includes(num) ? 'text-slate-700' : 'text-transparent'
               }`}
             >
               {num}

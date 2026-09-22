@@ -90,20 +90,20 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-6 px-4">
+    <div className="max-w-2xl mx-auto py-3 sm:py-6 px-3 sm:px-4">
       {/* Header */}
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center space-x-2">
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center space-x-2">
           <span>Create Custom Sudoku</span>
         </h2>
-        <p className="text-xs text-slate-500 mt-1">
-          Fill in the starting clues you want. When you're ready, click "Start Solving" to play!
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          Fill in your starting clues. When you're ready, click "Start Solving" to play!
         </p>
       </div>
 
       {/* Configuration bar: Title, Date, Theme */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm mb-6 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200 shadow-xs mb-4 sm:mb-6 space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
           <div>
             <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
               Puzzle Title
@@ -112,21 +112,21 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g. Daily Puzzle #42"
             />
           </div>
 
           <div>
             <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1 flex items-center space-x-1">
-              <Calendar className="w-3.5 h-3.5 text-blue-600" />
-              <span>Assigned Date (System Time)</span>
+              <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span>Assigned Date</span>
             </label>
             <input
               type="datetime-local"
               value={puzzleDate}
               onChange={(e) => setPuzzleDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -134,13 +134,13 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
         {/* Checkerboard toggle */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100">
           <div className="flex items-center space-x-2">
-            <Layers className="w-4 h-4 text-slate-500" />
+            <Layers className="w-4 h-4 text-slate-500 shrink-0" />
             <span className="text-xs font-semibold text-slate-700">Light Blue Checkerboard Shading</span>
           </div>
           <button
             type="button"
             onClick={() => setHasCheckerboard(!hasCheckerboard)}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${
               hasCheckerboard ? 'bg-blue-600' : 'bg-slate-300'
             }`}
           >
@@ -155,7 +155,7 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
 
       {/* 9x9 Creation Board */}
       <div className="flex flex-col items-center">
-        <div className="w-full max-w-[420px] aspect-square grid grid-cols-9 grid-rows-9 border-2 border-slate-900 bg-white rounded-xl shadow-xl overflow-hidden select-none mb-3">
+        <div className="w-full max-w-[min(100vw-1.5rem,420px,50vh)] aspect-square grid grid-cols-9 grid-rows-9 border-[2px] sm:border-[3px] border-slate-900 bg-white rounded-xl shadow-lg sm:shadow-xl overflow-hidden select-none mb-2.5 touch-manipulation">
           {grid.map((row, r) =>
             row.map((val, c) => {
               const isSelected = selectedCell?.r === r && selectedCell?.c === c;
@@ -176,14 +176,14 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
                 <div
                   key={`${r},${c}`}
                   onClick={() => setSelectedCell({ r, c })}
-                  className={`flex items-center justify-center cursor-pointer border-r border-b border-slate-300 text-lg sm:text-xl font-bold transition-colors ${
-                    isRightThick ? 'border-r-2 border-r-slate-800' : ''
-                  } ${isBottomThick ? 'border-b-2 border-b-slate-800' : ''} ${bgClass}`}
+                  className={`flex items-center justify-center cursor-pointer border-r border-b border-slate-300 text-base sm:text-xl font-bold transition-colors ${
+                    isRightThick ? 'border-r-[2px] sm:border-r-[3px] border-r-slate-800' : ''
+                  } ${isBottomThick ? 'border-b-[2px] sm:border-b-[3px] border-b-slate-800' : ''} ${bgClass}`}
                 >
                   {val > 0 ? (
                     <span className={isConflict ? 'text-rose-600' : 'text-slate-900'}>{val}</span>
                   ) : (
-                    <span className="text-slate-200 font-normal">·</span>
+                    <span className="text-slate-300 font-normal">·</span>
                   )}
                 </div>
               );
@@ -192,32 +192,32 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
         </div>
 
         {/* Clue status and conflict alert */}
-        <div className="w-full max-w-[420px] flex items-center justify-between text-xs px-1 mb-3">
+        <div className="w-full max-w-[min(100vw-1.5rem,420px,50vh)] flex items-center justify-between text-xs px-1 mb-2.5">
           <span className="font-semibold text-slate-600">
-            Clues entered: <span className="text-blue-600 font-bold">{clueCount}</span> / 81
+            Clues: <span className="text-blue-600 font-bold">{clueCount}</span> / 81
           </span>
           {conflicts.size > 0 && (
             <span className="text-rose-600 font-bold flex items-center space-x-1">
               <AlertCircle className="w-3.5 h-3.5" />
-              <span>{conflicts.size} conflicts detected!</span>
+              <span>{conflicts.size} conflicts!</span>
             </span>
           )}
         </div>
 
         {/* Creation Keypad (1-9, Clear) */}
-        <div className="w-full max-w-[420px] grid grid-cols-10 gap-1.5 mb-4">
+        <div className="w-full max-w-[min(100vw-1.5rem,420px,50vh)] grid grid-cols-10 gap-1 sm:gap-1.5 mb-3">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
             <button
               key={n}
               onClick={() => handleSetNumber(n)}
-              className="py-2.5 rounded-xl bg-white hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 border border-slate-200 font-bold text-base text-slate-800 shadow-sm active:scale-95 transition-all"
+              className="py-2 sm:py-2.5 rounded-xl bg-white hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 border border-slate-200 font-bold text-sm sm:text-base text-slate-800 shadow-xs active:scale-95 transition-all touch-manipulation"
             >
               {n}
             </button>
           ))}
           <button
             onClick={() => handleSetNumber(0)}
-            className="py-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 font-bold text-xs shadow-sm active:scale-95 transition-all flex items-center justify-center"
+            className="py-2 sm:py-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 font-bold text-xs shadow-xs active:scale-95 transition-all flex items-center justify-center touch-manipulation"
             title="Clear cell"
           >
             ✕
@@ -225,17 +225,17 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
         </div>
 
         {errorMsg && (
-          <div className="w-full max-w-[420px] mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center space-x-2">
+          <div className="w-full max-w-[min(100vw-1.5rem,420px,50vh)] mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Actions Footer */}
-        <div className="w-full max-w-[420px] flex items-center justify-between gap-3">
+        <div className="w-full max-w-[min(100vw-1.5rem,420px,50vh)] flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-2 sm:gap-3">
           <button
             onClick={handleClearAll}
-            className="flex items-center space-x-1.5 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-xs font-semibold transition-colors"
+            className="flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-xs font-semibold transition-colors shadow-xs"
           >
             <Trash2 className="w-4 h-4" />
             <span>Clear Grid</span>
@@ -244,7 +244,7 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
           <button
             onClick={handleStartSolving}
             disabled={clueCount === 0 || conflicts.size > 0}
-            className={`flex-1 flex items-center justify-center space-x-2 py-3 px-5 rounded-xl text-xs font-bold transition-all shadow-md ${
+            className={`flex-1 flex items-center justify-center space-x-2 py-2.5 sm:py-3 px-4 rounded-xl text-xs font-bold transition-all shadow-sm ${
               clueCount > 0 && conflicts.size === 0
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/25 active:scale-95 cursor-pointer'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-200'

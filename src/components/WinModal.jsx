@@ -40,21 +40,21 @@ export default function WinModal({
   const totalTime = puzzle?.completionTime || puzzle?.elapsedTime || 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-pop text-center relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl p-5 sm:p-8 max-w-md w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-100 animate-pop text-center relative my-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Trophy Icon */}
-        <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center text-amber-900 shadow-xl shadow-amber-400/30 mb-4 animate-bounce">
-          <Trophy className="w-10 h-10" />
+        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center text-amber-900 shadow-xl shadow-amber-400/30 mb-3 sm:mb-4 animate-bounce">
+          <Trophy className="w-8 h-8 sm:w-10 sm:h-10" />
         </div>
 
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Sudoku Solved!</h2>
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Sudoku Solved!</h2>
         <p className="text-xs text-slate-500 mt-1">
           Every row, column, and 3x3 block is mathematically verified and correct!
         </p>

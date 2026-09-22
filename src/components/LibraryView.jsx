@@ -115,7 +115,7 @@ export default function LibraryView({
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6 px-4">
+    <div className="max-w-4xl mx-auto py-3 sm:py-6 px-3 sm:px-4">
       {/* Hidden file input for backup restore */}
       <input
         ref={fileImportRef}
@@ -126,39 +126,39 @@ export default function LibraryView({
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Puzzle Library & Archive</h2>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Puzzle Library & Archive</h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Organized date-wise using system timestamps. Filter by status or resume anytime.
           </p>
         </div>
 
-        <div className="flex items-center space-x-2 self-start sm:self-auto">
+        <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">
           {/* Export Backup */}
           <button
             onClick={handleExportBackup}
             title="Download full backup of all puzzles as JSON"
-            className="flex items-center space-x-1 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors"
+            className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span className="hidden sm:inline">Export</span>
+            <Download className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="hidden xs:inline sm:inline">Export</span>
           </button>
 
           {/* Import Backup */}
           <button
             onClick={() => fileImportRef.current?.click()}
             title="Restore puzzles from backup JSON"
-            className="flex items-center space-x-1 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors"
+            className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors"
           >
-            <Upload className="w-3.5 h-3.5 text-slate-500" />
-            <span className="hidden sm:inline">Import</span>
+            <Upload className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="hidden xs:inline sm:inline">Import</span>
           </button>
 
           {/* Create Custom */}
           <button
             onClick={onNewCreate}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs active:scale-95 transition-all"
+            className="flex items-center space-x-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs active:scale-95 transition-all"
           >
             <span>✏️ Create</span>
           </button>
@@ -166,18 +166,18 @@ export default function LibraryView({
           {/* Scan New Image */}
           <button
             onClick={onNewScan}
-            className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
+            className="flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
           >
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle className="w-4 h-4 shrink-0" />
             <span>Scan Image</span>
           </button>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center space-x-1 p-1 bg-slate-100 rounded-xl mb-6 overflow-x-auto">
+      <div className="flex items-center space-x-1.5 p-1 bg-slate-100 rounded-xl mb-4 sm:mb-6 overflow-x-auto no-scrollbar">
         {[
-          { key: 'all', label: 'All Puzzles', count: counts.all },
+          { key: 'all', label: 'All', count: counts.all },
           { key: 'Finished', label: 'Finished', count: counts.Finished },
           { key: 'In Progress', label: 'In Progress', count: counts['In Progress'] },
           { key: 'Untouched', label: 'Untouched', count: counts.Untouched }
@@ -185,16 +185,16 @@ export default function LibraryView({
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
               filter === tab.key
-                ? 'bg-white text-slate-900 shadow-sm'
+                ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <span>{tab.label}</span>
             <span
               className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                filter === tab.key ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'
+                filter === tab.key ? 'bg-blue-100 text-blue-700 font-extrabold' : 'bg-slate-200 text-slate-600'
               }`}
             >
               {tab.count}
