@@ -1,14 +1,14 @@
 import React from 'react';
-import { Grid3X3, Image as ImageIcon, BookOpen, PenTool, Sparkles, Calendar } from 'lucide-react';
+import { Grid3X3, Image as ImageIcon, BookOpen, PenTool, Sparkles, User, LogOut, Cloud } from 'lucide-react';
 
 export default function Navbar({
   activeTab,
   setActiveTab,
   autoHighlight,
   setAutoHighlight,
-  currentPuzzleTitle,
-  currentPuzzleDate,
-  onEditDate
+  currentUser,
+  onOpenAuth,
+  onLogout
 }) {
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
@@ -80,8 +80,8 @@ export default function Navbar({
           </button>
         </nav>
 
-        {/* Right Settings: Pen & Paper Mode Toggle */}
-        <div className="flex items-center space-x-3">
+        {/* Right Settings: Pen & Paper Mode Toggle + User Account Button */}
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <button
             onClick={() => setAutoHighlight(!autoHighlight)}
             title={
@@ -89,7 +89,7 @@ export default function Navbar({
                 ? 'Auto-Highlighting: ON (Click to switch to Pen & Paper mode)'
                 : 'Pen & Paper Mode: ON (No automatic highlights or error warnings)'
             }
-            className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+            className={`flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
               autoHighlight
                 ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
                 : 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100 shadow-sm'
@@ -98,17 +98,53 @@ export default function Navbar({
             {autoHighlight ? (
               <>
                 <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                <span className="hidden sm:inline">Smart Hints</span>
+                <span className="hidden md:inline">Smart Hints</span>
                 <span className="text-[10px] bg-blue-200/70 text-blue-800 px-1 py-0.2 rounded font-bold">ON</span>
               </>
             ) : (
               <>
                 <PenTool className="w-3.5 h-3.5 text-amber-700" />
-                <span className="hidden sm:inline">Pen & Paper</span>
+                <span className="hidden md:inline">Pen & Paper</span>
                 <span className="text-[10px] bg-amber-200/80 text-amber-900 px-1 py-0.2 rounded font-bold">PURE</span>
               </>
             )}
           </button>
+
+          {/* User Account / Cloud Sync Button */}
+          {currentUser ? (
+            <div className="flex items-center space-x-2 bg-slate-100/90 pl-2 pr-1 py-1 rounded-xl border border-slate-200">
+              <div className="flex items-center space-x-1.5">
+                <div className="w-6 h-6 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                  {(currentUser.displayName || currentUser.email || 'U')[0].toUpperCase()}
+                </div>
+                <div className="hidden sm:block text-left">
+                  <div className="text-[11px] font-bold text-slate-800 leading-none truncate max-w-[90px]">
+                    {currentUser.displayName || currentUser.email.split('@')[0]}
+                  </div>
+                  <div className="flex items-center space-x-0.5 text-[9px] text-emerald-600 font-semibold mt-0.5">
+                    <Cloud className="w-2.5 h-2.5" />
+                    <span>Synced</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={onLogout}
+                title="Sign Out"
+                className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-white transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAuth}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm shadow-blue-500/20 active:scale-95 transition-all"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

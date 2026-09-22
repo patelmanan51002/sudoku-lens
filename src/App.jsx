@@ -8,6 +8,14 @@ import ReviewModal from './components/ReviewModal';
 import LibraryView from './components/LibraryView';
 import WinModal from './components/WinModal';
 import ManualCreator from './components/ManualCreator';
+import AuthModal from './components/AuthModal';
+import { useAuth } from './contexts/AuthContext';
+import {
+  fetchUserPuzzles,
+  syncUserPuzzle,
+  removeUserPuzzle,
+  subscribeToUserPuzzles
+} from './services/cloudSync';
 import {
   getSavedPuzzles,
   savePuzzle,
@@ -23,9 +31,12 @@ import { validateSudoku, isBoardComplete } from './utils/sudokuSolver';
 import { getSystemDateTimeISO } from './utils/dateUtils';
 
 export default function App() {
+  const { currentUser, logout } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   const [puzzles, setPuzzles] = useState(() => getSavedPuzzles());
   const [activeId, setActiveId] = useState(() => getActivePuzzleId());
-  const [activeTab, setActiveTab] = useState('play'); // 'play', 'upload', 'library'
+  const [activeTab, setActiveTab] = useState('play'); // 'play', 'upload', 'create', 'library'
 
   // Settings: Auto-Highlighting (Pen & Paper mode when false)
   const [settings, setSettingsState] = useState(() => getSettings());
@@ -36,6 +47,44 @@ export default function App() {
     setSettingsState(updated);
     saveSettings(updated);
   };
+
+  // Synchronize with user account on login
+  useEffect(() => {
+    if (!currentUser) {
+      const local = getSavedPuzzles();
+      setPuzzles(local);
+      return;
+    }
+
+    let unsub = () => {};
+    (async () => {
+      try {
+        const cloudPuzzles = await fetchUserPuzzles(currentUser.uid);
+        if (cloudPuzzles && cloudPuzzles.length > 0) {
+          setPuzzles(cloudPuzzles);
+          setActiveId(cloudPuzzles[0].id);
+          setActivePuzzleId(cloudPuzzles[0].id);
+        } else {
+          // First time user logged in: migrate local puzzles to their cloud account
+          const local = getSavedPuzzles();
+          for (const p of local) {
+            await syncUserPuzzle(currentUser.uid, p);
+          }
+          setPuzzles(local);
+        }
+
+        unsub = subscribeToUserPuzzles(currentUser.uid, (remoteList) => {
+          if (remoteList && remoteList.length > 0) {
+            setPuzzles(remoteList);
+          }
+        });
+      } catch (err) {
+        console.warn('Cloud sync error:', err);
+      }
+    })();
+
+    return () => unsub();
+  }, [currentUser]);
 
   // Find active puzzle
   const currentPuzzle = puzzles.find((p) => p.id === activeId) || puzzles[0] || createSamplePuzzle();
@@ -58,7 +107,7 @@ export default function App() {
   const redoStack = currentPuzzle.redoStack || [];
   const isFinished = currentPuzzle.status === 'Finished';
 
-  // Auto-save helper: updates active puzzle state and localStorage
+  // Auto-save helper: updates active puzzle state, localStorage, and cloud
   const updateCurrentPuzzle = useCallback((patch) => {
     setPuzzles((prevList) => {
       const idx = prevList.findIndex((p) => p.id === currentPuzzle.id);
@@ -69,11 +118,14 @@ export default function App() {
         updatedAt: getSystemDateTimeISO()
       };
       const saved = savePuzzle(updated);
+      if (currentUser) {
+        syncUserPuzzle(currentUser.uid, saved);
+      }
       const copy = [...prevList];
       copy[idx] = saved;
       return copy;
     });
-  }, [currentPuzzle.id]);
+  }, [currentPuzzle.id, currentUser]);
 
   // Live Timer
   useEffect(() => {
@@ -329,6 +381,9 @@ export default function App() {
   // Delete puzzle
   const handleDeletePuzzle = (id) => {
     const updated = deletePuzzle(id);
+    if (currentUser) {
+      removeUserPuzzle(currentUser.uid, id);
+    }
     setPuzzles(updated);
     if (activeId === id) {
       const nextId = updated[0]?.id || '';
@@ -341,6 +396,9 @@ export default function App() {
   const handleUpdatePuzzleDate = (id, newDateISO) => {
     const updated = updatePuzzleDateTime(id, newDateISO);
     if (updated) {
+      if (currentUser) {
+        syncUserPuzzle(currentUser.uid, updated);
+      }
       setPuzzles(getSavedPuzzles());
     }
   };
@@ -377,6 +435,9 @@ export default function App() {
     };
 
     const saved = savePuzzle(newPuzzle);
+    if (currentUser) {
+      syncUserPuzzle(currentUser.uid, saved);
+    }
     setPuzzles((prev) => [saved, ...prev]);
     setActiveId(newId);
     setActivePuzzleId(newId);
@@ -407,6 +468,9 @@ export default function App() {
     };
 
     const saved = savePuzzle(newPuzzle);
+    if (currentUser) {
+      syncUserPuzzle(currentUser.uid, saved);
+    }
     setPuzzles((prev) => [saved, ...prev]);
     setActiveId(newId);
     setActivePuzzleId(newId);
@@ -422,8 +486,9 @@ export default function App() {
         setActiveTab={setActiveTab}
         autoHighlight={autoHighlight}
         setAutoHighlight={setAutoHighlight}
-        currentPuzzleTitle={currentPuzzle.title}
-        currentPuzzleDate={currentPuzzle.imageDate || currentPuzzle.createdAt}
+        currentUser={currentUser}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onLogout={logout}
       />
 
       {/* Main Content Area */}
@@ -553,6 +618,12 @@ export default function App() {
           }}
         />
       )}
+
+      {/* User Authentication & Cloud Sync Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   );
 }
