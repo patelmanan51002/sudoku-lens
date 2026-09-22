@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { Play } from 'lucide-react';
 import SudokuCell from './SudokuCell';
 import { findConflicts } from '../utils/sudokuSolver';
 
@@ -16,15 +17,19 @@ export default function SudokuBoard({
   isNotesMode,
   hasCheckerboard = true,
   autoHighlight = true,
+  isTimerRunning = false,
+  isFinished = false,
+  elapsedTime = 0,
+  onStartTimer
 }) {
   const hiddenInputRef = useRef(null);
 
   // Focus hidden input on cell selection to trigger mobile system keyboard
   useEffect(() => {
-    if (selectedCell && hiddenInputRef.current) {
+    if (selectedCell && hiddenInputRef.current && isTimerRunning) {
       hiddenInputRef.current.focus({ preventScroll: true });
     }
-  }, [selectedCell]);
+  }, [selectedCell, isTimerRunning]);
 
   // Global & board keyboard listener
   useEffect(() => {
@@ -73,6 +78,15 @@ export default function SudokuBoard({
         return;
       }
 
+      // If timer is not running, block direct digit typing unless started
+      if (!isTimerRunning && !isFinished) {
+        if (/^[1-9]$/.test(e.key) || ['Backspace', 'Delete', '0'].includes(e.key)) {
+          e.preventDefault();
+          onStartTimer?.();
+          return;
+        }
+      }
+
       // Digits 1-9
       if (/^[1-9]$/.test(e.key)) {
         e.preventDefault();
@@ -90,7 +104,7 @@ export default function SudokuBoard({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCell, onInputDigit, onErase, onUndo, onRedo, onToggleNotes, onSelectCell]);
+  }, [selectedCell, onInputDigit, onErase, onUndo, onRedo, onToggleNotes, onSelectCell, isTimerRunning, isFinished, onStartTimer]);
 
   // Compute live conflicts if autoHighlight is enabled
   const conflicts = autoHighlight ? findConflicts(grid) : new Set();
@@ -120,51 +134,88 @@ export default function SudokuBoard({
         }}
       />
 
-      {/* 9x9 Board Frame */}
+      {/* 9x9 Board Frame: 3x3 Grid of 3x3 Blocks with Gap Dividers for Crisp Unbroken Lines */}
       <div
-        className="grid grid-cols-9 grid-rows-9 border-[2px] sm:border-[3px] border-slate-900 bg-white rounded-xl shadow-lg sm:shadow-xl overflow-hidden aspect-square"
+        className="grid grid-cols-3 grid-rows-3 border-[3px] sm:border-[4px] border-slate-900 bg-slate-900 gap-[2px] sm:gap-[3px] rounded-2xl shadow-xl overflow-hidden aspect-square w-full select-none"
       >
-        {Array.from({ length: 9 }).map((_, r) =>
-          Array.from({ length: 9 }).map((_, c) => {
-            const isGiven = givenGrid ? givenGrid[r][c] > 0 : false;
-            const value = grid[r][c];
-            const isSelected = selectedCell?.r === r && selectedCell?.c === c;
+        {Array.from({ length: 9 }).map((_, boxIdx) => {
+          const boxR = Math.floor(boxIdx / 3);
+          const boxC = boxIdx % 3;
+          const isCheckerBlue = hasCheckerboard && (boxIdx % 2 === 0);
 
-            const isSameRow = selectedCell?.r === r;
-            const isSameCol = selectedCell?.c === c;
-            const isSameBox =
-              selectedCell &&
-              Math.floor(selectedCell.r / 3) === Math.floor(r / 3) &&
-              Math.floor(selectedCell.c / 3) === Math.floor(c / 3);
+          return (
+            <div
+              key={boxIdx}
+              className="grid grid-cols-3 grid-rows-3 gap-[1px] bg-slate-300"
+            >
+              {Array.from({ length: 9 }).map((_, innerIdx) => {
+                const innerR = Math.floor(innerIdx / 3);
+                const innerC = innerIdx % 3;
+                const r = boxR * 3 + innerR;
+                const c = boxC * 3 + innerC;
 
-            const isSameRowOrColOrBox = isSameRow || isSameCol || isSameBox;
-            const isSameNumber =
-              selectedValue && selectedValue > 0 && value === selectedValue;
-            const isConflict = conflicts.has(`${r},${c}`);
+                const isGiven = givenGrid ? givenGrid[r][c] > 0 : false;
+                const value = grid[r][c];
+                const isSelected = selectedCell?.r === r && selectedCell?.c === c;
 
-            const cellKey = `${r},${c}`;
-            const cellNotes = notes ? notes[cellKey] || [] : [];
+                const isSameRow = selectedCell?.r === r;
+                const isSameCol = selectedCell?.c === c;
+                const isSameBox =
+                  selectedCell &&
+                  Math.floor(selectedCell.r / 3) === boxR &&
+                  Math.floor(selectedCell.c / 3) === boxC;
 
-            return (
-              <SudokuCell
-                key={cellKey}
-                r={r}
-                c={c}
-                value={value}
-                isGiven={isGiven}
-                notes={cellNotes}
-                isSelected={isSelected}
-                isSameRowOrColOrBox={isSameRowOrColOrBox}
-                isSameNumber={isSameNumber}
-                isConflict={isConflict}
-                hasCheckerboard={hasCheckerboard}
-                autoHighlight={autoHighlight}
-                onClick={() => onSelectCell({ r, c })}
-              />
-            );
-          })
-        )}
+                const isSameRowOrColOrBox = isSameRow || isSameCol || isSameBox;
+                const isSameNumber =
+                  selectedValue && selectedValue > 0 && value === selectedValue;
+                const isConflict = conflicts.has(`${r},${c}`);
+
+                const cellKey = `${r},${c}`;
+                const cellNotes = notes ? notes[cellKey] || [] : [];
+
+                return (
+                  <SudokuCell
+                    key={cellKey}
+                    r={r}
+                    c={c}
+                    value={value}
+                    isGiven={isGiven}
+                    notes={cellNotes}
+                    isSelected={isSelected}
+                    isSameRowOrColOrBox={isSameRowOrColOrBox}
+                    isSameNumber={isSameNumber}
+                    isConflict={isConflict}
+                    isCheckerBlue={isCheckerBlue}
+                    autoHighlight={autoHighlight}
+                    onClick={() => {
+                      if (!isTimerRunning && !isFinished) {
+                        onStartTimer?.();
+                      }
+                      onSelectCell({ r, c });
+                    }}
+                  />
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
+
+      {/* Tap-to-Start / Resume Overlay when Timer is not running */}
+      {!isTimerRunning && !isFinished && (
+        <div
+          onClick={onStartTimer}
+          className="absolute inset-0 z-20 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-900/50 group touch-manipulation animate-pop"
+          title="Click to start timer and play"
+        >
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white text-blue-600 shadow-2xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+            <Play className="w-8 h-8 sm:w-10 sm:h-10 ml-1 fill-blue-600" />
+          </div>
+          <span className="bg-white text-slate-900 font-extrabold text-xs sm:text-sm px-4 py-1.5 rounded-full shadow-lg border border-slate-100">
+            {elapsedTime > 0 ? 'Tap to Resume Game' : 'Tap to Start Timer & Play'}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

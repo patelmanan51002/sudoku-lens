@@ -155,35 +155,47 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
 
       {/* 9x9 Creation Board */}
       <div className="flex flex-col items-center">
-        <div className="w-full max-w-[min(100vw-1.5rem,420px,50vh)] aspect-square grid grid-cols-9 grid-rows-9 border-[2px] sm:border-[3px] border-slate-900 bg-white rounded-xl shadow-lg sm:shadow-xl overflow-hidden select-none mb-2.5 touch-manipulation">
-          {grid.map((row, r) =>
-            row.map((val, c) => {
-              const isSelected = selectedCell?.r === r && selectedCell?.c === c;
-              const isRightThick = (c + 1) % 3 === 0 && c !== 8;
-              const isBottomThick = (r + 1) % 3 === 0 && r !== 8;
-              const boxIndex = Math.floor(r / 3) * 3 + Math.floor(c / 3);
-              const isChecker = hasCheckerboard && (boxIndex % 2 === 0);
-              const isConflict = conflicts.has(`${r},${c}`);
-
-              let bgClass = isChecker ? 'bg-sky-100/70' : 'bg-white';
-              if (isConflict) {
-                bgClass = 'bg-rose-100 text-rose-700 font-bold';
-              } else if (isSelected) {
-                bgClass = 'bg-blue-200 ring-2 ring-blue-600 ring-inset';
-              }
+        {/* 9x9 Creation Board */}
+        <div className="w-full max-w-[min(100vw-1.5rem,420px,50vh)] aspect-square grid grid-cols-3 grid-rows-3 gap-[2px] sm:gap-[3px] bg-slate-900 border-[2px] sm:border-[3px] border-slate-900 rounded-xl shadow-lg sm:shadow-xl overflow-hidden select-none mb-2.5 touch-manipulation">
+          {[0, 1, 2].map((blockRow) =>
+            [0, 1, 2].map((blockCol) => {
+              const blockIndex = blockRow * 3 + blockCol;
+              const isCheckerBox = hasCheckerboard && (blockIndex % 2 === 0);
 
               return (
                 <div
-                  key={`${r},${c}`}
-                  onClick={() => setSelectedCell({ r, c })}
-                  className={`flex items-center justify-center cursor-pointer border-r border-b border-slate-300 text-base sm:text-xl font-bold transition-colors ${
-                    isRightThick ? 'border-r-[2px] sm:border-r-[3px] border-r-slate-800' : ''
-                  } ${isBottomThick ? 'border-b-[2px] sm:border-b-[3px] border-b-slate-800' : ''} ${bgClass}`}
+                  key={`block-${blockRow}-${blockCol}`}
+                  className="grid grid-cols-3 grid-rows-3 gap-[1px] bg-slate-300"
                 >
-                  {val > 0 ? (
-                    <span className={isConflict ? 'text-rose-600' : 'text-slate-900'}>{val}</span>
-                  ) : (
-                    <span className="text-slate-300 font-normal">·</span>
+                  {[0, 1, 2].map((subRow) =>
+                    [0, 1, 2].map((subCol) => {
+                      const r = blockRow * 3 + subRow;
+                      const c = blockCol * 3 + subCol;
+                      const val = grid[r][c];
+                      const isSelected = selectedCell?.r === r && selectedCell?.c === c;
+                      const isConflict = conflicts.has(`${r},${c}`);
+
+                      let bgClass = isCheckerBox ? 'bg-sky-100/70' : 'bg-white';
+                      if (isConflict) {
+                        bgClass = 'bg-rose-100 text-rose-700 font-bold';
+                      } else if (isSelected) {
+                        bgClass = 'bg-blue-200 ring-2 ring-blue-600 ring-inset';
+                      }
+
+                      return (
+                        <div
+                          key={`${r},${c}`}
+                          onClick={() => setSelectedCell({ r, c })}
+                          className={`flex items-center justify-center cursor-pointer text-base sm:text-xl font-bold transition-colors ${bgClass}`}
+                        >
+                          {val > 0 ? (
+                            <span className={isConflict ? 'text-rose-600' : 'text-slate-900'}>{val}</span>
+                          ) : (
+                            <span className="text-slate-300 font-normal">·</span>
+                          )}
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               );

@@ -10,20 +10,10 @@ export default function SudokuCell({
   isSameRowOrColOrBox,
   isSameNumber,
   isConflict,
-  hasCheckerboard,
+  isCheckerBlue,
   autoHighlight,
   onClick
 }) {
-  const boxR = Math.floor(r / 3);
-  const boxC = Math.floor(c / 3);
-  const boxIndex = boxR * 3 + boxC;
-  // Blocks 0, 2, 4, 6, 8 have light blue background like the sample image
-  const isCheckerBlue = hasCheckerboard && (boxIndex % 2 === 0);
-
-  // Border logic
-  const isRightThick = (c + 1) % 3 === 0 && c !== 8;
-  const isBottomThick = (r + 1) % 3 === 0 && r !== 8;
-
   // Background styling
   let bgClass = isCheckerBlue ? 'bg-sky-100/70' : 'bg-white';
 
@@ -35,7 +25,7 @@ export default function SudokuCell({
     } else if (isSameNumber) {
       bgClass = 'bg-sky-200/90';
     } else if (isSameRowOrColOrBox) {
-      bgClass = isCheckerBlue ? 'bg-sky-200/40' : 'bg-slate-100/80';
+      bgClass = isCheckerBlue ? 'bg-sky-200/50' : 'bg-slate-100/90';
     }
   } else {
     // Pen & Paper mode: pure view without assists
@@ -49,10 +39,7 @@ export default function SudokuCell({
       onClick={onClick}
       role="gridcell"
       aria-selected={isSelected}
-      className={`relative flex items-center justify-center cursor-pointer transition-colors duration-75 select-none touch-manipulation aspect-square
-        border-r border-b border-slate-300
-        ${isRightThick ? 'border-r-[2px] sm:border-r-[3px] border-r-slate-900' : ''}
-        ${isBottomThick ? 'border-b-[2px] sm:border-b-[3px] border-b-slate-900' : ''}
+      className={`relative flex items-center justify-center cursor-pointer transition-colors duration-75 select-none touch-manipulation aspect-square w-full h-full
         ${isSelected ? 'z-10 ring-2 sm:ring-3 ring-blue-600 ring-inset shadow-inner' : ''}
         ${bgClass}
       `}

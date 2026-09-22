@@ -103,7 +103,7 @@ export default function App() {
   // Selected cell on board
   const [selectedCell, setSelectedCell] = useState(null);
   const [isNotesMode, setIsNotesMode] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [validationAlert, setValidationAlert] = useState(null);
   const [showWinModal, setShowWinModal] = useState(false);
 
@@ -138,9 +138,9 @@ export default function App() {
     });
   }, [currentPuzzle.id, currentUser]);
 
-  // Live Timer
+  // Live Timer (starts only when user explicitly starts it, pauses when toggled or tab hidden)
   useEffect(() => {
-    if (isFinished || isPaused || activeTab !== 'play') return;
+    if (isFinished || !isTimerRunning || activeTab !== 'play') return;
 
     const timer = setInterval(() => {
       setPuzzles((prevList) => {
@@ -162,13 +162,13 @@ export default function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [activeId, isFinished, isPaused, activeTab]);
+  }, [activeId, isFinished, isTimerRunning, activeTab]);
 
   // Pause timer when tab is hidden
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
-        setIsPaused(true);
+        setIsTimerRunning(false);
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -184,6 +184,13 @@ export default function App() {
   // Input Digit (1-9)
   const handleInputDigit = (digit) => {
     if (!selectedCell || isFinished) return;
+    if (!isTimerRunning) {
+      setValidationAlert({
+        type: 'warning',
+        message: 'Timer is paused or not started. Click "Start Timer" or "Resume" to play!'
+      });
+      return;
+    }
     const { r, c } = selectedCell;
 
     // Cannot modify initial given numbers
@@ -250,6 +257,13 @@ export default function App() {
   // Erase Cell
   const handleErase = () => {
     if (!selectedCell || isFinished) return;
+    if (!isTimerRunning) {
+      setValidationAlert({
+        type: 'warning',
+        message: 'Timer is paused or not started. Click "Start Timer" or "Resume" to play!'
+      });
+      return;
+    }
     const { r, c } = selectedCell;
     if (givenGrid[r][c] > 0) return;
 
@@ -285,6 +299,13 @@ export default function App() {
   // Undo
   const handleUndo = () => {
     if (history.length === 0 || isFinished) return;
+    if (!isTimerRunning) {
+      setValidationAlert({
+        type: 'warning',
+        message: 'Timer is paused or not started. Click "Start Timer" or "Resume" to play!'
+      });
+      return;
+    }
     const lastMove = history[history.length - 1];
     const newHistory = history.slice(0, -1);
 
@@ -320,6 +341,13 @@ export default function App() {
   // Redo
   const handleRedo = () => {
     if (redoStack.length === 0 || isFinished) return;
+    if (!isTimerRunning) {
+      setValidationAlert({
+        type: 'warning',
+        message: 'Timer is paused or not started. Click "Start Timer" or "Resume" to play!'
+      });
+      return;
+    }
     const nextMove = redoStack[redoStack.length - 1];
     const newRedo = redoStack.slice(0, -1);
 
@@ -350,18 +378,23 @@ export default function App() {
     setSelectedCell({ r, c });
   };
 
-  // Reset Board to initial given digits
+  // Reset Board to initial given digits and reset timer
   const handleReset = () => {
+    setIsTimerRunning(false);
     const initialGrid = givenGrid.map((row) => [...row]);
     updateCurrentPuzzle({
       currentGrid: initialGrid,
+      elapsedTime: 0,
       notes: {},
       history: [],
       redoStack: [],
       status: 'Untouched',
       completionTime: null
     });
-    setValidationAlert(null);
+    setValidationAlert({
+      type: 'info',
+      message: 'Puzzle and timer have been reset. Click "Start Timer" when you are ready to play!'
+    });
   };
 
   // Validate Sudoku (User requirement: option after all empty places got filled)
@@ -387,6 +420,7 @@ export default function App() {
     setActiveTab('play');
     setSelectedCell(null);
     setValidationAlert(null);
+    setIsTimerRunning(false);
   };
 
   // Delete puzzle
@@ -400,6 +434,7 @@ export default function App() {
       const nextId = updated[0]?.id || '';
       setActiveId(nextId);
       setActivePuzzleId(nextId);
+      setIsTimerRunning(false);
     }
   };
 
@@ -455,6 +490,7 @@ export default function App() {
     setReviewData(null);
     setActiveTab('play');
     setSelectedCell(null);
+    setIsTimerRunning(false);
   };
 
   // Create custom Sudoku manually
@@ -487,6 +523,7 @@ export default function App() {
     setActivePuzzleId(newId);
     setActiveTab('play');
     setSelectedCell(null);
+    setIsTimerRunning(false);
   };
 
   return (
@@ -533,6 +570,10 @@ export default function App() {
                 className={`w-full max-w-[480px] mb-3 p-3 rounded-xl border text-xs font-semibold flex items-center justify-between animate-pop ${
                   validationAlert.type === 'success'
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : validationAlert.type === 'warning'
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : validationAlert.type === 'info'
+                    ? 'bg-blue-50 border-blue-200 text-blue-800'
                     : 'bg-rose-50 border-rose-200 text-rose-800'
                 }`}
               >
@@ -561,6 +602,10 @@ export default function App() {
               isNotesMode={isNotesMode}
               hasCheckerboard={currentPuzzle.hasCheckerboard ?? true}
               autoHighlight={autoHighlight}
+              isTimerRunning={isTimerRunning}
+              elapsedTime={currentPuzzle.elapsedTime || 0}
+              onStartTimer={() => setIsTimerRunning(true)}
+              isFinished={isFinished}
             />
 
             {/* Control Panel: Undo, Redo, Reset, Validate, Timer, Date */}
@@ -568,14 +613,15 @@ export default function App() {
               grid={grid}
               elapsedTime={currentPuzzle.elapsedTime || 0}
               completionTime={currentPuzzle.completionTime}
-              isPaused={isPaused}
-              onTogglePause={() => setIsPaused(!isPaused)}
+              isTimerRunning={isTimerRunning}
+              onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
+              onStartTimer={() => setIsTimerRunning(true)}
               onUndo={handleUndo}
               onRedo={handleRedo}
               onReset={handleReset}
               onValidate={handleValidate}
-              canUndo={history.length > 0 && !isFinished}
-              canRedo={redoStack.length > 0 && !isFinished}
+              canUndo={history.length > 0 && !isFinished && isTimerRunning}
+              canRedo={redoStack.length > 0 && !isFinished && isTimerRunning}
               isNotesMode={isNotesMode}
               onToggleNotes={() => setIsNotesMode(!isNotesMode)}
               puzzleDate={currentPuzzle.imageDate || currentPuzzle.createdAt}
@@ -594,6 +640,8 @@ export default function App() {
               onToggleNotes={() => setIsNotesMode(!isNotesMode)}
               autoHighlight={autoHighlight}
               isFinished={isFinished}
+              isTimerRunning={isTimerRunning}
+              onStartTimer={() => setIsTimerRunning(true)}
             />
           </div>
         )}

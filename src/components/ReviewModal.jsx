@@ -132,34 +132,45 @@ export default function ReviewModal({
             </div>
 
             <div
-              className="w-full max-w-[min(100%,320px)] aspect-square grid grid-cols-9 grid-rows-9 border-2 border-slate-900 bg-white rounded-xl shadow-md overflow-hidden select-none touch-manipulation"
+              className="w-full max-w-[min(100%,320px)] aspect-square grid grid-cols-3 grid-rows-3 gap-[2px] bg-slate-900 border-2 border-slate-900 rounded-xl shadow-md overflow-hidden select-none touch-manipulation"
             >
-              {grid.map((row, r) =>
-                row.map((val, c) => {
-                  const isSelected = selectedCell?.r === r && selectedCell?.c === c;
-                  const isRightThick = (c + 1) % 3 === 0 && c !== 8;
-                  const isBottomThick = (r + 1) % 3 === 0 && r !== 8;
-                  const boxIndex = Math.floor(r / 3) * 3 + Math.floor(c / 3);
-                  const isChecker = data.hasCheckerboard && (boxIndex % 2 === 0);
+              {[0, 1, 2].map((blockRow) =>
+                [0, 1, 2].map((blockCol) => {
+                  const blockIndex = blockRow * 3 + blockCol;
+                  const isCheckerBox = data.hasCheckerboard && (blockIndex % 2 === 0);
 
                   return (
                     <div
-                      key={`${r},${c}`}
-                      onClick={() => handleCellClick(r, c)}
-                      className={`flex items-center justify-center cursor-pointer border-r border-b border-slate-300 font-bold text-sm sm:text-base transition-colors ${
-                        isRightThick ? 'border-r-2 border-r-slate-800' : ''
-                      } ${isBottomThick ? 'border-b-2 border-b-slate-800' : ''} ${
-                        isSelected
-                          ? 'ring-2 ring-blue-600 bg-blue-100'
-                          : isChecker
-                          ? 'bg-sky-100/70'
-                          : 'bg-white'
-                      }`}
+                      key={`block-${blockRow}-${blockCol}`}
+                      className="grid grid-cols-3 grid-rows-3 gap-[1px] bg-slate-300"
                     >
-                      {val > 0 ? (
-                        <span className="text-slate-900">{val}</span>
-                      ) : (
-                        <span className="text-slate-300 font-normal">·</span>
+                      {[0, 1, 2].map((subRow) =>
+                        [0, 1, 2].map((subCol) => {
+                          const r = blockRow * 3 + subRow;
+                          const c = blockCol * 3 + subCol;
+                          const val = grid[r][c];
+                          const isSelected = selectedCell?.r === r && selectedCell?.c === c;
+
+                          return (
+                            <div
+                              key={`${r},${c}`}
+                              onClick={() => handleCellClick(r, c)}
+                              className={`flex items-center justify-center cursor-pointer font-bold text-sm sm:text-base transition-colors ${
+                                isSelected
+                                  ? 'ring-2 ring-blue-600 bg-blue-100'
+                                  : isCheckerBox
+                                  ? 'bg-sky-100/70'
+                                  : 'bg-white'
+                              }`}
+                            >
+                              {val > 0 ? (
+                                <span className="text-slate-900">{val}</span>
+                              ) : (
+                                <span className="text-slate-300 font-normal">·</span>
+                              )}
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   );
