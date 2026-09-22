@@ -312,6 +312,7 @@ export function generateAccountSyncPayload(currentUser, userPuzzles = []) {
     v: 1,
     u: userRecord,
     p: userPuzzles,
+    fb: getFirebaseConfig(),
     t: Date.now()
   };
 
@@ -358,10 +359,39 @@ export function importAccountSyncPayload(rawInput) {
     };
     saveLocalSession(session);
 
-    // 3. Save user puzzles
+    // 3. If remote Firebase config was shared, apply it locally
+    if (data.fb && data.fb.apiKey) {
+      saveFirebaseConfig(data.fb);
+    }
+
+    // 4. Merge user puzzles smartly
     if (Array.isArray(puzzles) && puzzles.length > 0) {
       const key = `sudoku_app_user_puzzles_${user.uid}`;
-      localStorage.setItem(key, JSON.stringify(puzzles));
+      let existing = [];
+      try {
+        existing = JSON.parse(localStorage.getItem(key) || '[]');
+      } catch (e) {
+        existing = [];
+      }
+
+      const map = new Map();
+      existing.forEach((p) => { if (p && p.id) map.set(p.id, p); });
+      puzzles.forEach((p) => {
+        if (!p || !p.id) return;
+        if (!map.has(p.id)) {
+          map.set(p.id, p);
+        } else {
+          // Keep the newer copy
+          const existP = map.get(p.id);
+          const existTime = new Date(existP.updatedAt || existP.createdAt || 0).getTime();
+          const newTime = new Date(p.updatedAt || p.createdAt || 0).getTime();
+          if (newTime >= existTime) {
+            map.set(p.id, p);
+          }
+        }
+      });
+
+      localStorage.setItem(key, JSON.stringify(Array.from(map.values())));
     }
 
     return session;
