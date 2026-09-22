@@ -132,7 +132,7 @@ export default function ReviewModal({
             </div>
 
             <div
-              className="w-full max-w-[min(100%,320px)] aspect-square grid grid-cols-3 grid-rows-3 gap-[2px] bg-slate-900 border-2 border-slate-900 rounded-xl shadow-md overflow-hidden select-none touch-manipulation"
+              className="w-full max-w-[min(100%,320px)] aspect-square grid grid-cols-3 grid-rows-3 gap-[2px] bg-slate-700 border-2 border-slate-700 rounded-xl shadow-md overflow-hidden select-none touch-manipulation"
             >
               {[0, 1, 2].map((blockRow) =>
                 [0, 1, 2].map((blockCol) => {
@@ -164,7 +164,7 @@ export default function ReviewModal({
                               }`}
                             >
                               {val > 0 ? (
-                                <span className="text-slate-900">{val}</span>
+                                <span className="text-slate-800">{val}</span>
                               ) : (
                                 <span className="text-slate-300 font-normal">·</span>
                               )}

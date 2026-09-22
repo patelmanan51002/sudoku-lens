@@ -21,16 +21,16 @@ export default function SudokuCell({
     if (isConflict) {
       bgClass = 'bg-rose-100 text-rose-700';
     } else if (isSelected) {
-      bgClass = 'bg-blue-200/90 text-blue-950 font-bold';
+      bgClass = 'bg-blue-100 text-blue-900 font-bold';
     } else if (isSameNumber) {
-      bgClass = 'bg-sky-200/90';
+      bgClass = 'bg-sky-100/90';
     } else if (isSameRowOrColOrBox) {
-      bgClass = isCheckerBlue ? 'bg-sky-200/50' : 'bg-slate-100/90';
+      bgClass = isCheckerBlue ? 'bg-sky-100/50' : 'bg-slate-50/80';
     }
   } else {
     // Pen & Paper mode: pure view without assists
     if (isSelected) {
-      bgClass = isCheckerBlue ? 'bg-sky-200' : 'bg-slate-200';
+      bgClass = isCheckerBlue ? 'bg-sky-200/70' : 'bg-slate-200/70';
     }
   }
 
@@ -40,14 +40,14 @@ export default function SudokuCell({
       role="gridcell"
       aria-selected={isSelected}
       className={`relative flex items-center justify-center cursor-pointer transition-colors duration-75 select-none touch-manipulation aspect-square w-full h-full
-        ${isSelected ? 'z-10 ring-2 sm:ring-3 ring-blue-600 ring-inset shadow-inner' : ''}
+        ${isSelected ? 'z-10 ring-2 ring-blue-600 ring-inset shadow-inner' : ''}
         ${bgClass}
       `}
     >
       {value > 0 ? (
         <span
-          className={`text-base sm:text-2xl md:text-3xl select-none leading-none transition-transform font-bold
-            ${isGiven ? 'text-slate-900' : 'text-blue-600'}
+          className={`text-lg sm:text-xl md:text-2xl select-none leading-none transition-transform
+            ${isGiven ? 'font-bold text-slate-800' : 'font-semibold text-blue-600'}
             ${autoHighlight && isConflict ? '!text-rose-600' : ''}
           `}
         >

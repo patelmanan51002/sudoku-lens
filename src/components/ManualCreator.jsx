@@ -156,7 +156,7 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
       {/* 9x9 Creation Board */}
       <div className="flex flex-col items-center">
         {/* 9x9 Creation Board */}
-        <div className="w-full max-w-[min(100vw-1.5rem,420px,50vh)] aspect-square grid grid-cols-3 grid-rows-3 gap-[2px] sm:gap-[3px] bg-slate-900 border-[2px] sm:border-[3px] border-slate-900 rounded-xl shadow-lg sm:shadow-xl overflow-hidden select-none mb-2.5 touch-manipulation">
+        <div className="w-full max-w-[min(100vw-1.5rem,420px,50vh)] aspect-square grid grid-cols-3 grid-rows-3 gap-[2px] bg-slate-700 border-2 border-slate-700 rounded-xl shadow-lg overflow-hidden select-none mb-2.5 touch-manipulation">
           {[0, 1, 2].map((blockRow) =>
             [0, 1, 2].map((blockCol) => {
               const blockIndex = blockRow * 3 + blockCol;
@@ -179,7 +179,7 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
                       if (isConflict) {
                         bgClass = 'bg-rose-100 text-rose-700 font-bold';
                       } else if (isSelected) {
-                        bgClass = 'bg-blue-200 ring-2 ring-blue-600 ring-inset';
+                        bgClass = 'bg-blue-100 ring-2 ring-blue-600 ring-inset';
                       }
 
                       return (
@@ -189,7 +189,7 @@ export default function ManualCreator({ onCreatePuzzle, onCancel }) {
                           className={`flex items-center justify-center cursor-pointer text-base sm:text-xl font-bold transition-colors ${bgClass}`}
                         >
                           {val > 0 ? (
-                            <span className={isConflict ? 'text-rose-600' : 'text-slate-900'}>{val}</span>
+                            <span className={isConflict ? 'text-rose-600' : 'text-slate-800'}>{val}</span>
                           ) : (
                             <span className="text-slate-300 font-normal">·</span>
                           )}

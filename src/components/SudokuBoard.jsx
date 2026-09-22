@@ -136,7 +136,7 @@ export default function SudokuBoard({
 
       {/* 9x9 Board Frame: 3x3 Grid of 3x3 Blocks with Gap Dividers for Crisp Unbroken Lines */}
       <div
-        className="grid grid-cols-3 grid-rows-3 border-[3px] sm:border-[4px] border-slate-900 bg-slate-900 gap-[2px] sm:gap-[3px] rounded-2xl shadow-xl overflow-hidden aspect-square w-full select-none"
+        className="grid grid-cols-3 grid-rows-3 border-[2px] border-slate-700 bg-slate-700 gap-[2px] rounded-2xl shadow-lg overflow-hidden aspect-square w-full select-none"
       >
         {Array.from({ length: 9 }).map((_, boxIdx) => {
           const boxR = Math.floor(boxIdx / 3);
@@ -201,17 +201,17 @@ export default function SudokuBoard({
         })}
       </div>
 
-      {/* Tap-to-Start / Resume Overlay when Timer is not running */}
+      {/* Tap-to-Start / Resume Overlay when Timer is not running (Light Frosted) */}
       {!isTimerRunning && !isFinished && (
         <div
           onClick={onStartTimer}
-          className="absolute inset-0 z-20 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-900/50 group touch-manipulation animate-pop"
+          className="absolute inset-0 z-20 bg-white/75 backdrop-blur-[1px] rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-white/85 group touch-manipulation animate-pop"
           title="Click to start timer and play"
         >
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white text-blue-600 shadow-2xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-            <Play className="w-8 h-8 sm:w-10 sm:h-10 ml-1 fill-blue-600" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-blue-600 text-white shadow-xl shadow-blue-500/25 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <Play className="w-7 h-7 sm:w-8 sm:h-8 ml-0.5 fill-white" />
           </div>
-          <span className="bg-white text-slate-900 font-extrabold text-xs sm:text-sm px-4 py-1.5 rounded-full shadow-lg border border-slate-100">
+          <span className="bg-slate-800 text-white font-bold text-xs sm:text-sm px-4 py-1.5 rounded-full shadow-md">
             {elapsedTime > 0 ? 'Tap to Resume Game' : 'Tap to Start Timer & Play'}
           </span>
         </div>
