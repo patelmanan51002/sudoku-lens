@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Lock, Mail, User, Cloud, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function AuthModal({ isOpen, onClose }) {
+export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const { login, signup, resetPassword } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
@@ -20,6 +20,7 @@ export default function AuthModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading || successMsg) return;
     setErrorMsg(null);
     setSuccessMsg(null);
 
@@ -60,11 +61,25 @@ export default function AuthModal({ isOpen, onClose }) {
     try {
       setLoading(true);
       if (isSignUp) {
-        await signup(email, password, displayName);
+        const user = await signup(email, password, displayName);
+        const name = user?.displayName || displayName || email.split('@')[0];
+        const msg = `🎉 Account created successfully! Welcome, ${name}!`;
+        setSuccessMsg(msg);
+        if (onAuthSuccess) onAuthSuccess(msg);
       } else {
-        await login(email, password);
+        const user = await login(email, password);
+        const name = user?.displayName || email.split('@')[0];
+        const msg = `✅ Logged in successfully! Welcome back, ${name}!`;
+        setSuccessMsg(msg);
+        if (onAuthSuccess) onAuthSuccess(msg);
       }
-      onClose();
+      setTimeout(() => {
+        setSuccessMsg(null);
+        setErrorMsg(null);
+        setPassword('');
+        setConfirmPassword('');
+        onClose();
+      }, 1200);
     } catch (err) {
       let friendly = err.message;
       if (friendly.includes('auth/invalid-credential') || friendly.includes('auth/wrong-password')) {
@@ -242,11 +257,20 @@ export default function AuthModal({ isOpen, onClose }) {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center space-x-1.5 mt-2"
+            disabled={loading || Boolean(successMsg)}
+            className={`w-full py-2.5 rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center space-x-1.5 mt-2 ${
+              successMsg
+                ? 'bg-emerald-600 text-white shadow-emerald-500/20'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 active:scale-95'
+            }`}
           >
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
+            ) : successMsg ? (
+              <span className="flex items-center space-x-1.5">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Success!</span>
+              </span>
             ) : isForgot ? (
               <span>Send Reset Email</span>
             ) : isSignUp ? (

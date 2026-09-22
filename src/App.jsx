@@ -33,6 +33,17 @@ import { getSystemDateTimeISO } from './utils/dateUtils';
 export default function App() {
   const { currentUser, logout } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authToast, setAuthToast] = useState(null);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setAuthToast({ type: 'info', message: 'Logged out successfully.' });
+      setTimeout(() => setAuthToast(null), 3000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const [puzzles, setPuzzles] = useState(() => getSavedPuzzles());
   const [activeId, setActiveId] = useState(() => getActivePuzzleId());
@@ -488,8 +499,29 @@ export default function App() {
         setAutoHighlight={setAutoHighlight}
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthModalOpen(true)}
-        onLogout={logout}
+        onLogout={handleLogout}
       />
+
+      {/* Auth Floating Toast Notification */}
+      {authToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-pop px-4">
+          <div
+            className={`px-4 py-2.5 rounded-2xl shadow-xl border flex items-center space-x-2 text-xs font-bold ${
+              authToast.type === 'success'
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/30'
+                : 'bg-slate-900 text-white border-slate-700 shadow-slate-900/40'
+            }`}
+          >
+            <span>{authToast.message}</span>
+            <button
+              onClick={() => setAuthToast(null)}
+              className="ml-2 text-white/70 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 py-4 sm:py-6 px-3 sm:px-6">
@@ -623,6 +655,10 @@ export default function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={(msg) => {
+          setAuthToast({ type: 'success', message: msg });
+          setTimeout(() => setAuthToast(null), 4000);
+        }}
       />
     </div>
   );

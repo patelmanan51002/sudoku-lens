@@ -28,15 +28,20 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signup = async (email, password, displayName) => {
-    return await appSignUp(email, password, displayName);
+    const user = await appSignUp(email, password, displayName);
+    setCurrentUser(user);
+    return user;
   };
 
   const login = async (email, password) => {
-    return await appSignIn(email, password);
+    const user = await appSignIn(email, password);
+    setCurrentUser(user);
+    return user;
   };
 
   const logout = async () => {
-    return await appSignOut();
+    await appSignOut();
+    setCurrentUser(null);
   };
 
   const resetPassword = async (email) => {

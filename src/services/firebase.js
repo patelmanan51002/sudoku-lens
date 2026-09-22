@@ -99,12 +99,25 @@ function getLocalSession() {
   }
 }
 
+const localAuthListeners = new Set();
+
+function notifyLocalAuth(user) {
+  localAuthListeners.forEach((cb) => {
+    try {
+      cb(user);
+    } catch (e) {
+      console.error('Error in auth listener:', e);
+    }
+  });
+}
+
 function saveLocalSession(user) {
   if (!user) {
     localStorage.removeItem(STORAGE_KEY_LOCAL_SESSION);
   } else {
     localStorage.setItem(STORAGE_KEY_LOCAL_SESSION, JSON.stringify(user));
   }
+  notifyLocalAuth(user);
 }
 
 /**
@@ -208,8 +221,10 @@ export function onAppAuthStateChanged(callback) {
     });
   }
 
-  // Local engine session check
-  const localUser = getLocalSession();
-  callback(localUser);
-  return () => {};
+  // Local engine session check with live listener subscription
+  localAuthListeners.add(callback);
+  callback(getLocalSession());
+  return () => {
+    localAuthListeners.delete(callback);
+  };
 }
