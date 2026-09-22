@@ -204,6 +204,173 @@ export async function appResetPassword(email) {
 }
 
 /**
+ * Update user display name / profile
+ */
+export async function appUpdateProfile(displayName) {
+  if (auth && auth.currentUser) {
+    const { updateProfile } = await import('firebase/auth');
+    await updateProfile(auth.currentUser, { displayName });
+    return {
+      uid: auth.currentUser.uid,
+      email: auth.currentUser.email,
+      displayName
+    };
+  }
+
+  const session = getLocalSession();
+  if (!session) throw new Error('No user is currently signed in.');
+
+  const users = getLocalUsers();
+  const cleanEmail = session.email.toLowerCase();
+  if (users[cleanEmail]) {
+    users[cleanEmail].displayName = displayName;
+    saveLocalUsers(users);
+  }
+
+  const updatedSession = { ...session, displayName };
+  saveLocalSession(updatedSession);
+  return updatedSession;
+}
+
+/**
+ * Change account password
+ */
+export async function appChangePassword(currentPassword, newPassword) {
+  if (auth && auth.currentUser) {
+    const { EmailAuthProvider, reauthenticateWithCredential, updatePassword } = await import('firebase/auth');
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    await updatePassword(auth.currentUser, newPassword);
+    return 'Password updated successfully.';
+  }
+
+  const session = getLocalSession();
+  if (!session) throw new Error('No user is currently signed in.');
+
+  const users = getLocalUsers();
+  const cleanEmail = session.email.toLowerCase();
+  const user = users[cleanEmail];
+  if (!user || user.passwordHash !== btoa(currentPassword)) {
+    throw new Error('Current password is incorrect.');
+  }
+
+  user.passwordHash = btoa(newPassword);
+  saveLocalUsers(users);
+  return 'Password updated successfully.';
+}
+
+/**
+ * Delete entire user account and their cloud/local data
+ */
+export async function appDeleteAccount(password) {
+  const session = getLocalSession();
+  const userId = session?.uid;
+  const userEmail = session?.email;
+
+  if (auth && auth.currentUser) {
+    const { EmailAuthProvider, reauthenticateWithCredential, deleteUser } = await import('firebase/auth');
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, password);
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    await deleteUser(auth.currentUser);
+  } else {
+    if (!session) throw new Error('No user is currently signed in.');
+    const users = getLocalUsers();
+    const cleanEmail = userEmail?.toLowerCase();
+    const user = users[cleanEmail];
+    if (!user || user.passwordHash !== btoa(password)) {
+      throw new Error('Incorrect password. Account deletion cancelled.');
+    }
+    delete users[cleanEmail];
+    saveLocalUsers(users);
+  }
+
+  // Purge isolated puzzles from device storage
+  if (userId) {
+    localStorage.removeItem(`sudoku_app_user_puzzles_${userId}`);
+  }
+
+  saveLocalSession(null);
+  return true;
+}
+
+/**
+ * Generates an encrypted/base64 sync payload to transfer account & puzzles to mobile
+ */
+export function generateAccountSyncPayload(currentUser, userPuzzles = []) {
+  if (!currentUser) return null;
+  const cleanEmail = currentUser.email?.toLowerCase();
+  const users = getLocalUsers();
+  const userRecord = users[cleanEmail] || {
+    uid: currentUser.uid,
+    email: cleanEmail,
+    displayName: currentUser.displayName,
+    passwordHash: '',
+    createdAt: new Date().toISOString()
+  };
+
+  const payload = {
+    v: 1,
+    u: userRecord,
+    p: userPuzzles,
+    t: Date.now()
+  };
+
+  return btoa(encodeURIComponent(JSON.stringify(payload)));
+}
+
+/**
+ * Imports an account sync payload on mobile / another device
+ */
+export function importAccountSyncPayload(rawInput) {
+  try {
+    let clean = rawInput.trim();
+    // If a full URL was pasted, extract the sync parameter
+    if (clean.includes('sync=')) {
+      const match = clean.match(/sync=([^&#]+)/);
+      if (match && match[1]) {
+        clean = decodeURIComponent(match[1]);
+      }
+    }
+
+    const jsonStr = decodeURIComponent(atob(clean));
+    const data = JSON.parse(jsonStr);
+
+    const user = data.u || data.user;
+    const puzzles = data.p || data.puzzles || [];
+
+    if (!user || !user.email) {
+      throw new Error('Invalid account data format.');
+    }
+
+    const cleanEmail = user.email.toLowerCase();
+
+    // 1. Save user to this device's user store
+    const users = getLocalUsers();
+    users[cleanEmail] = user;
+    saveLocalUsers(users);
+
+    // 2. Set current session
+    const session = {
+      uid: user.uid,
+      email: cleanEmail,
+      displayName: user.displayName || cleanEmail.split('@')[0],
+      createdAt: user.createdAt
+    };
+    saveLocalSession(session);
+
+    // 3. Save user puzzles
+    if (Array.isArray(puzzles) && puzzles.length > 0) {
+      const key = `sudoku_app_user_puzzles_${user.uid}`;
+      localStorage.setItem(key, JSON.stringify(puzzles));
+    }
+
+    return session;
+  } catch (err) {
+    throw new Error('Failed to import account: ' + err.message);
+  }
+}
+
+/**
  * Subscribe to auth state changes
  */
 export function onAppAuthStateChanged(callback) {

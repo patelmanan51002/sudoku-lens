@@ -9,7 +9,9 @@ import LibraryView from './components/LibraryView';
 import WinModal from './components/WinModal';
 import ManualCreator from './components/ManualCreator';
 import AuthModal from './components/AuthModal';
+import AccountModal from './components/AccountModal';
 import { useAuth } from './contexts/AuthContext';
+import { importAccountSyncPayload } from './services/firebase';
 import {
   fetchUserPuzzles,
   syncUserPuzzle,
@@ -33,7 +35,30 @@ import { getSystemDateTimeISO } from './utils/dateUtils';
 export default function App() {
   const { currentUser, logout } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [authToast, setAuthToast] = useState(null);
+
+  // Handle cross-device mobile sync link (?sync=...)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const syncData = params.get('sync');
+      if (syncData) {
+        const user = importAccountSyncPayload(syncData);
+        if (user) {
+          const name = user.displayName || user.email.split('@')[0];
+          setAuthToast({
+            type: 'success',
+            message: `🎉 Account & puzzles synchronized on this device! Welcome, ${name}!`
+          });
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      }
+    } catch (e) {
+      console.warn('Sync link import error:', e);
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -536,6 +561,7 @@ export default function App() {
         setAutoHighlight={setAutoHighlight}
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenAccount={() => setIsAccountModalOpen(true)}
         onLogout={handleLogout}
       />
 
@@ -705,6 +731,26 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={(msg) => {
           setAuthToast({ type: 'success', message: msg });
+          setTimeout(() => setAuthToast(null), 4000);
+        }}
+      />
+
+      {/* Account Details & Management Modal */}
+      <AccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        currentUser={currentUser}
+        puzzles={puzzles}
+        onAccountDeleted={() => {
+          setPuzzles([]);
+          setActiveId('');
+          setAuthToast({
+            type: 'info',
+            message: 'Your account and all saved puzzles have been permanently deleted.'
+          });
+        }}
+        onToast={(t) => {
+          setAuthToast(t);
           setTimeout(() => setAuthToast(null), 4000);
         }}
       />

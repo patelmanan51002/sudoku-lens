@@ -4,8 +4,14 @@ import {
   appSignIn,
   appSignOut,
   appResetPassword,
+  appUpdateProfile,
+  appChangePassword,
+  appDeleteAccount,
+  generateAccountSyncPayload,
+  importAccountSyncPayload,
   onAppAuthStateChanged,
-  isFirebaseConfigured
+  isFirebaseConfigured,
+  saveFirebaseConfig
 } from '../services/firebase';
 
 const AuthContext = createContext();
@@ -48,13 +54,50 @@ export function AuthProvider({ children }) {
     return await appResetPassword(email);
   };
 
+  const updateProfile = async (displayName) => {
+    const updated = await appUpdateProfile(displayName);
+    setCurrentUser(updated);
+    return updated;
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    return await appChangePassword(currentPassword, newPassword);
+  };
+
+  const deleteAccount = async (password) => {
+    const res = await appDeleteAccount(password);
+    setCurrentUser(null);
+    return res;
+  };
+
+  const generateSyncCode = (puzzles = []) => {
+    return generateAccountSyncPayload(currentUser, puzzles);
+  };
+
+  const importSyncCode = (rawPayload) => {
+    const user = importAccountSyncPayload(rawPayload);
+    setCurrentUser(user);
+    return user;
+  };
+
+  const setFirebaseConfig = (config) => {
+    saveFirebaseConfig(config);
+    window.location.reload();
+  };
+
   const value = {
     currentUser,
     isCloudReady: isFirebaseConfigured,
     signup,
     login,
     logout,
-    resetPassword
+    resetPassword,
+    updateProfile,
+    changePassword,
+    deleteAccount,
+    generateSyncCode,
+    importSyncCode,
+    setFirebaseConfig
   };
 
   return (

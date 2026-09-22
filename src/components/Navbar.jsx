@@ -8,6 +8,7 @@ export default function Navbar({
   setAutoHighlight,
   currentUser,
   onOpenAuth,
+  onOpenAccount,
   onLogout
 }) {
   const navItems = [
@@ -105,8 +106,13 @@ export default function Navbar({
             {/* User Account / Profile */}
             {currentUser ? (
               <div className="flex items-center space-x-1.5 bg-slate-100/90 pl-1.5 pr-1 py-1 rounded-xl border border-slate-200">
-                <div className="flex items-center space-x-1.5">
-                  <div className="w-6 h-6 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={onOpenAccount}
+                  title="View Account Details & Mobile Sync"
+                  className="flex items-center space-x-1.5 hover:opacity-80 transition-opacity text-left cursor-pointer group"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
                     {(currentUser.displayName || currentUser.email || 'U')[0].toUpperCase()}
                   </div>
                   <div className="hidden lg:block text-left pr-1">
@@ -115,10 +121,10 @@ export default function Navbar({
                     </div>
                     <div className="flex items-center space-x-0.5 text-[9px] text-emerald-600 font-semibold mt-0.5">
                       <Cloud className="w-2.5 h-2.5" />
-                      <span>Synced</span>
+                      <span>Account</span>
                     </div>
                   </div>
-                </div>
+                </button>
 
                 <button
                   onClick={onLogout}
