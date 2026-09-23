@@ -38,7 +38,7 @@ export function createSamplePuzzle() {
 /**
  * Calculates current status based on user input and completion
  */
-export function determineStatus(givenGrid, currentGrid, isFinished = false) {
+export function determineStatus(givenGrid, currentGrid, isFinished = false, elapsedTime = 0, notes = {}) {
   if (isFinished) return 'Finished';
   if (!givenGrid || !currentGrid) return 'Untouched';
 
@@ -51,7 +51,12 @@ export function determineStatus(givenGrid, currentGrid, isFinished = false) {
     }
   }
 
-  return userEntriesCount > 0 ? 'In Progress' : 'Untouched';
+  const hasNotes = notes && typeof notes === 'object' && Object.values(notes).some(arr => Array.isArray(arr) && arr.length > 0);
+  if (userEntriesCount > 0 || (elapsedTime && elapsedTime > 0) || hasNotes) {
+    return 'In Progress';
+  }
+
+  return 'Untouched';
 }
 
 /**
@@ -86,10 +91,14 @@ export function savePuzzle(puzzle) {
   try {
     const puzzles = getSavedPuzzles();
     const index = puzzles.findIndex(p => p.id === puzzle.id);
+    const computedStatus = puzzle.status === 'Finished'
+      ? 'Finished'
+      : determineStatus(puzzle.givenGrid, puzzle.currentGrid, false, puzzle.elapsedTime, puzzle.notes);
+
     const updated = {
       ...puzzle,
       updatedAt: getSystemDateTimeISO(),
-      status: determineStatus(puzzle.givenGrid, puzzle.currentGrid, puzzle.status === 'Finished')
+      status: computedStatus
     };
 
     if (index >= 0) {

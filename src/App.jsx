@@ -167,36 +167,72 @@ export default function App() {
   const redoStack = currentPuzzle.redoStack || [];
   const isFinished = currentPuzzle.status === 'Finished';
 
-  // Auto-save helper: updates active puzzle state, localStorage, and cloud
-  const updateCurrentPuzzle = useCallback((patch) => {
+  // Auto-save helper: updates active puzzle state, localStorage, and fires event sync
+  const updateCurrentPuzzle = useCallback((patch, forceImmediateSync = false) => {
     const updatedTime = getSystemDateTimeISO();
-    let saved = null;
+    const targetPuzzle = puzzles.find((p) => p.id === activeId) || currentPuzzle;
+    if (!targetPuzzle) return;
+
+    const prevStatus = targetPuzzle.status;
+    const candidate = {
+      ...targetPuzzle,
+      ...patch,
+      updatedAt: updatedTime
+    };
+
+    const saved = savePuzzle(candidate);
+    if (!saved) return;
 
     setPuzzles((prevList) => {
-      const idx = prevList.findIndex((p) => p.id === currentPuzzle.id);
-      if (idx === -1) return prevList;
-      const updated = {
-        ...prevList[idx],
-        ...patch,
-        updatedAt: updatedTime
-      };
-      saved = savePuzzle(updated);
+      const idx = prevList.findIndex((p) => p.id === saved.id);
+      if (idx === -1) return [saved, ...prevList];
       const copy = [...prevList];
       copy[idx] = saved;
       return copy;
     });
 
-    if (currentUser && saved) {
-      syncUserPuzzle(currentUser.uid, saved);
-    }
-  }, [currentPuzzle.id, currentUser]);
+    if (currentUser) {
+      const statusChanged = prevStatus !== saved.status;
+      const isFinished = saved.status === 'Finished';
 
-  // Toggle timer (Start / Pause / Resume) with instant state & cloud flush
+      syncUserPuzzle(currentUser.uid, saved).catch((err) => {
+        console.warn('Event cloud sync failed:', err);
+      });
+
+      if (statusChanged || isFinished || forceImmediateSync) {
+        console.log(`[Event Sync] Priority sync fired: id=${saved.id}, prevStatus=${prevStatus}, status=${saved.status}, force=${forceImmediateSync}`);
+      }
+    }
+  }, [activeId, currentPuzzle, currentUser, puzzles]);
+
+  // Start timer explicitly with status transition & immediate event sync
+  const handleStartTimer = () => {
+    setIsTimerRunning(true);
+    if (currentPuzzle) {
+      const newStatus = currentPuzzle.status === 'Finished' ? 'Finished' : 'In Progress';
+      updateCurrentPuzzle({
+        status: newStatus,
+        elapsedTime: currentPuzzle.elapsedTime || 0
+      }, true);
+    }
+  };
+
+  // Toggle timer (Start / Pause / Resume) with prioritized event sync
   const handleToggleTimer = () => {
     const nextRunning = !isTimerRunning;
     setIsTimerRunning(nextRunning);
-    if (!nextRunning && currentPuzzle) {
-      updateCurrentPuzzle({ elapsedTime: currentPuzzle.elapsedTime || 0 });
+
+    if (currentPuzzle) {
+      const newStatus = currentPuzzle.status === 'Finished'
+        ? 'Finished'
+        : nextRunning
+        ? 'In Progress'
+        : currentPuzzle.status;
+
+      updateCurrentPuzzle({
+        elapsedTime: currentPuzzle.elapsedTime || 0,
+        status: newStatus
+      }, true);
     }
   };
 
@@ -459,7 +495,7 @@ export default function App() {
       redoStack: [],
       status: 'Untouched',
       completionTime: null
-    });
+    }, true);
     setValidationAlert({
       type: 'info',
       message: 'Puzzle and timer have been reset. Click "Start Timer" when you are ready to play!'
@@ -471,10 +507,12 @@ export default function App() {
     const res = validateSudoku(grid);
     if (res.isValid) {
       const finalTime = currentPuzzle.elapsedTime || 1;
+      setIsTimerRunning(false);
       updateCurrentPuzzle({
         status: 'Finished',
-        completionTime: finalTime
-      });
+        completionTime: finalTime,
+        elapsedTime: finalTime
+      }, true);
       setShowWinModal(true);
       setValidationAlert({ type: 'success', message: res.message });
     } else {
@@ -508,13 +546,13 @@ export default function App() {
   };
 
   // Update puzzle date
-  const handleUpdatePuzzleDate = (id, newDateISO) => {
+  const handleUpdatePuzzleDate = async (id, newDateISO) => {
     const updated = updatePuzzleDateTime(id, newDateISO);
     if (updated) {
-      if (currentUser) {
-        syncUserPuzzle(currentUser.uid, updated);
-      }
       setPuzzles(getSavedPuzzles());
+      if (currentUser) {
+        await syncUserPuzzle(currentUser.uid, updated);
+      }
     }
   };
 
@@ -662,7 +700,7 @@ export default function App() {
               autoHighlight={autoHighlight}
               isTimerRunning={isTimerRunning}
               elapsedTime={currentPuzzle.elapsedTime || 0}
-              onStartTimer={() => setIsTimerRunning(true)}
+              onStartTimer={handleStartTimer}
               isFinished={isFinished}
             />
 
@@ -673,7 +711,7 @@ export default function App() {
               completionTime={currentPuzzle.completionTime}
               isTimerRunning={isTimerRunning}
               onToggleTimer={handleToggleTimer}
-              onStartTimer={() => setIsTimerRunning(true)}
+              onStartTimer={handleStartTimer}
               onUndo={handleUndo}
               onRedo={handleRedo}
               onReset={handleReset}
@@ -699,7 +737,7 @@ export default function App() {
               autoHighlight={autoHighlight}
               isFinished={isFinished}
               isTimerRunning={isTimerRunning}
-              onStartTimer={() => setIsTimerRunning(true)}
+              onStartTimer={handleStartTimer}
             />
           </div>
         )}
