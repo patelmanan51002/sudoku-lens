@@ -1,11 +1,13 @@
 import React from 'react';
-import { Grid3X3, BookOpen, PenTool, Sparkles, User, LogOut, Cloud, PlusCircle } from 'lucide-react';
+import { Grid3X3, BookOpen, PenTool, Sparkles, User, LogOut, Cloud, PlusCircle, Smartphone, Keyboard } from 'lucide-react';
 
 export default function Navbar({
   activeTab,
   setActiveTab,
   autoHighlight,
   setAutoHighlight,
+  useNativeKeyboard = false,
+  setUseNativeKeyboard,
   currentUser,
   onOpenAuth,
   onOpenAccount,
@@ -110,6 +112,39 @@ export default function Navbar({
                   <span className="hidden sm:inline">Pen & Paper</span>
                   <span className="text-[10px] bg-amber-200/80 text-amber-900 px-1 py-0.2 rounded font-bold">
                     PURE
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Mobile Keyboard / Web Keypad Mode Toggle */}
+            <button
+              onClick={() => setUseNativeKeyboard?.(!useNativeKeyboard)}
+              title={
+                useNativeKeyboard
+                  ? 'Input Mode: Phone / Android Keyboard (Click to switch to Web Keypad)'
+                  : 'Input Mode: Web Keypad (Click to switch to Phone / Android Keyboard)'
+              }
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                useNativeKeyboard
+                  ? 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 shadow-xs'
+                  : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-xs'
+              }`}
+            >
+              {useNativeKeyboard ? (
+                <>
+                  <Keyboard className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span className="hidden md:inline">Phone Keys</span>
+                  <span className="text-[10px] bg-purple-200/80 text-purple-900 px-1 py-0.2 rounded font-bold">
+                    ON
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Smartphone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                  <span className="hidden md:inline">Web Keypad</span>
+                  <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1 py-0.2 rounded font-bold">
+                    PAD
                   </span>
                 </>
               )}

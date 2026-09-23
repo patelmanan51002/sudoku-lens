@@ -17,6 +17,7 @@ export default function SudokuBoard({
   isNotesMode,
   hasCheckerboard = true,
   autoHighlight = true,
+  useNativeKeyboard = false,
   isTimerRunning = false,
   isFinished = false,
   elapsedTime = 0,
@@ -24,12 +25,14 @@ export default function SudokuBoard({
 }) {
   const hiddenInputRef = useRef(null);
 
-  // Focus hidden input on cell selection to trigger mobile system keyboard
+  // Focus hidden input on cell selection ONLY when user prefers mobile native keyboard
   useEffect(() => {
-    if (selectedCell && hiddenInputRef.current && isTimerRunning) {
+    if (useNativeKeyboard && selectedCell && hiddenInputRef.current && isTimerRunning) {
       hiddenInputRef.current.focus({ preventScroll: true });
+    } else if (!useNativeKeyboard && hiddenInputRef.current && document.activeElement === hiddenInputRef.current) {
+      hiddenInputRef.current.blur();
     }
-  }, [selectedCell, isTimerRunning]);
+  }, [selectedCell, isTimerRunning, useNativeKeyboard]);
 
   // Global & board keyboard listener
   useEffect(() => {
@@ -112,15 +115,21 @@ export default function SudokuBoard({
 
   return (
     <div className="relative w-full max-w-[min(100vw-1.5rem,480px,52vh)] mx-auto select-none touch-manipulation">
-      {/* Hidden input to bring up mobile native number keyboard */}
+      {/* Hidden input to bring up mobile native number keyboard when enabled */}
       <input
         ref={hiddenInputRef}
         type="text"
-        inputMode="numeric"
+        inputMode={useNativeKeyboard ? "numeric" : "none"}
+        tabIndex={useNativeKeyboard ? 0 : -1}
+        readOnly={!useNativeKeyboard}
         pattern="[0-9]*"
         className="opacity-0 absolute -top-10 left-0 w-1 h-1 pointer-events-none"
         aria-hidden="true"
         onChange={(e) => {
+          if (!useNativeKeyboard) {
+            e.target.value = '';
+            return;
+          }
           const val = e.target.value;
           if (val) {
             const lastChar = val[val.length - 1];

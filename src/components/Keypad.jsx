@@ -1,5 +1,5 @@
 import React from 'react';
-import { Delete, Pencil } from 'lucide-react';
+import { Delete, Pencil, Smartphone, Keyboard } from 'lucide-react';
 
 export default function Keypad({
   grid,
@@ -10,7 +10,9 @@ export default function Keypad({
   autoHighlight,
   isFinished,
   isTimerRunning = false,
-  onStartTimer
+  onStartTimer,
+  useNativeKeyboard = false,
+  onToggleNativeKeyboard
 }) {
   if (isFinished) {
     return (
@@ -103,6 +105,41 @@ export default function Keypad({
           <Delete className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
           <span>Erase Cell</span>
         </button>
+      </div>
+
+      {/* Mobile Input Mode Selector (On-screen keypad vs Native Android / Phone keyboard) */}
+      <div className="flex items-center justify-between mt-2.5 px-1 py-1 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
+        <span className="text-[11px] font-semibold text-slate-600 flex items-center space-x-1.5 pl-1">
+          <span>Grid Input Mode:</span>
+        </span>
+        <div className="flex items-center space-x-1 bg-slate-200/70 p-0.5 rounded-lg">
+          <button
+            type="button"
+            onClick={() => onToggleNativeKeyboard?.(false)}
+            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+              !useNativeKeyboard
+                ? 'bg-white text-blue-600 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            title="Use on-screen Web Keypad (tapping grid cells will not open phone keyboard)"
+          >
+            <Smartphone className="w-3 h-3 text-blue-500" />
+            <span>Web Keypad</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleNativeKeyboard?.(true)}
+            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+              useNativeKeyboard
+                ? 'bg-white text-blue-600 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            title="Use Phone / Android Keyboard (tapping grid cells opens native numeric keyboard)"
+          >
+            <Keyboard className="w-3 h-3 text-purple-500" />
+            <span>Phone Keyboard</span>
+          </button>
+        </div>
       </div>
     </div>
   );

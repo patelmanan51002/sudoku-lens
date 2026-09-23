@@ -77,12 +77,19 @@ export default function App() {
   const [activeId, setActiveId] = useState(() => getActivePuzzleId());
   const [activeTab, setActiveTab] = useState('play'); // 'play', 'upload', 'create', 'library'
 
-  // Settings: Auto-Highlighting (Pen & Paper mode when false)
+  // Settings: Auto-Highlighting (Pen & Paper mode when false) & Mobile Input Preference
   const [settings, setSettingsState] = useState(() => getSettings());
   const autoHighlight = settings.autoHighlight;
+  const useNativeKeyboard = settings.useNativeKeyboard ?? false;
 
   const setAutoHighlight = (val) => {
     const updated = { ...settings, autoHighlight: val };
+    setSettingsState(updated);
+    saveSettings(updated);
+  };
+
+  const setUseNativeKeyboard = (val) => {
+    const updated = { ...settings, useNativeKeyboard: val };
     setSettingsState(updated);
     saveSettings(updated);
   };
@@ -694,6 +701,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         autoHighlight={autoHighlight}
         setAutoHighlight={setAutoHighlight}
+        useNativeKeyboard={useNativeKeyboard}
+        setUseNativeKeyboard={setUseNativeKeyboard}
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onOpenAccount={() => setIsAccountModalOpen(true)}
@@ -809,6 +818,7 @@ export default function App() {
               isNotesMode={isNotesMode}
               hasCheckerboard={currentPuzzle.hasCheckerboard ?? true}
               autoHighlight={autoHighlight}
+              useNativeKeyboard={useNativeKeyboard}
               isTimerRunning={isTimerRunning}
               elapsedTime={currentPuzzle.elapsedTime || 0}
               onStartTimer={handleStartTimer}
@@ -851,6 +861,8 @@ export default function App() {
               isFinished={isFinished}
               isTimerRunning={isTimerRunning}
               onStartTimer={handleStartTimer}
+              useNativeKeyboard={useNativeKeyboard}
+              onToggleNativeKeyboard={setUseNativeKeyboard}
             />
           </div>
         )}

@@ -192,12 +192,22 @@ export function setActivePuzzleId(id) {
 export function getSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_SETTINGS);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        autoHighlight: parsed.autoHighlight ?? true,
+        useNativeKeyboard: parsed.useNativeKeyboard ?? false,
+        highlightMatching: parsed.highlightMatching ?? true,
+        highlightCrosshair: parsed.highlightCrosshair ?? true,
+        soundEffects: parsed.soundEffects ?? true
+      };
+    }
   } catch (e) {
     // fallback
   }
   return {
     autoHighlight: true, // Auto-highlighting toggle (Pen & Paper mode when false)
+    useNativeKeyboard: false, // Mobile input preference: false = web keypad, true = native Android/system keyboard
     highlightMatching: true,
     highlightCrosshair: true,
     soundEffects: true

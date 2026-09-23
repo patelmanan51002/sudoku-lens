@@ -22,13 +22,13 @@ const STORAGE_KEY_LOCAL_USERS = 'sudoku_app_local_users_v1';
 const STORAGE_KEY_LOCAL_SESSION = 'sudoku_app_local_session_v1';
 
 const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyD01-AuXIOROjcJ6cVbRbLV5MzmNOiOQmg",
-  authDomain: "sudoku-lens-app.firebaseapp.com",
-  projectId: "sudoku-lens-app",
-  storageBucket: "sudoku-lens-app.firebasestorage.app",
-  messagingSenderId: "414225244704",
-  appId: "1:414225244704:web:57b13fde198249139c5245",
-  measurementId: "G-HHHN6ERN9V"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "sudoku-lens-app.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "sudoku-lens-app",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "sudoku-lens-app.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "414225244704",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:414225244704:web:57b13fde198249139c5245",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-HHHN6ERN9V"
 };
 
 /**
@@ -46,12 +46,12 @@ export function getFirebaseConfig() {
   if (envApiKey && envApiKey !== 'your_api_key_here') {
     return {
       apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: import.meta.env.VITE_FIREBASE_APP_ID,
-      measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "sudoku-lens-app.firebaseapp.com",
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "sudoku-lens-app",
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "sudoku-lens-app.firebasestorage.app",
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "414225244704",
+      appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:414225244704:web:57b13fde198249139c5245",
+      measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-HHHN6ERN9V"
     };
   }
 
