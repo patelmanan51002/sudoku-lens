@@ -93,33 +93,49 @@ export default function App() {
     }
 
     let unsub = () => {};
+    let isMounted = true;
+
     (async () => {
       try {
         const cloudPuzzles = await fetchUserPuzzles(currentUser.uid);
+        if (!isMounted) return;
+
         if (cloudPuzzles && cloudPuzzles.length > 0) {
           setPuzzles(cloudPuzzles);
-          setActiveId(cloudPuzzles[0].id);
-          setActivePuzzleId(cloudPuzzles[0].id);
+          try {
+            localStorage.setItem('sudoku_app_puzzles_v2', JSON.stringify(cloudPuzzles));
+          } catch (e) {}
+          if (!cloudPuzzles.some((p) => p.id === activeId)) {
+            setActiveId(cloudPuzzles[0].id);
+            setActivePuzzleId(cloudPuzzles[0].id);
+          }
         } else {
-          // First time user logged in: migrate local puzzles to their cloud account
+          // Migrate local puzzles to cloud if user account has no cloud puzzles yet
           const local = getSavedPuzzles();
           for (const p of local) {
             await syncUserPuzzle(currentUser.uid, p);
           }
-          setPuzzles(local);
+          if (isMounted) setPuzzles(local);
         }
 
         unsub = subscribeToUserPuzzles(currentUser.uid, (remoteList) => {
+          if (!isMounted) return;
           if (remoteList && remoteList.length > 0) {
             setPuzzles(remoteList);
+            try {
+              localStorage.setItem('sudoku_app_puzzles_v2', JSON.stringify(remoteList));
+            } catch (e) {}
           }
         });
       } catch (err) {
-        console.warn('Cloud sync error:', err);
+        console.error('Cloud sync error:', err);
       }
     })();
 
-    return () => unsub();
+    return () => {
+      isMounted = false;
+      unsub();
+    };
   }, [currentUser]);
 
   // Find active puzzle
