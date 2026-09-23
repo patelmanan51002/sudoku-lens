@@ -29,7 +29,7 @@ export default function LibraryView({
   onSelectPuzzle,
   onDeletePuzzle,
   onUpdatePuzzleDate,
-  onNewScan,
+  onNewRandom,
   onNewCreate
 }) {
   const [filter, setFilter] = useState('all'); // 'all', 'Finished', 'In Progress', 'Untouched'
@@ -163,13 +163,13 @@ export default function LibraryView({
             <span>✏️ Create</span>
           </button>
 
-          {/* Scan New Image */}
+          {/* New Random Puzzle */}
           <button
-            onClick={onNewScan}
+            onClick={onNewRandom}
             className="flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
           >
             <PlusCircle className="w-4 h-4 shrink-0" />
-            <span>Scan Image</span>
+            <span>New Puzzle</span>
           </button>
         </div>
       </div>
@@ -208,7 +208,7 @@ export default function LibraryView({
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
           <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <h3 className="font-bold text-slate-700 text-sm">No puzzles found in this category</h3>
-          <p className="text-xs text-slate-400 mt-1">Upload a new Sudoku image or choose another filter.</p>
+          <p className="text-xs text-slate-400 mt-1">Generate a new Sudoku puzzle or choose another filter.</p>
         </div>
       ) : (
         <div className="space-y-8">

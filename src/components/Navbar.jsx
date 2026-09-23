@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid3X3, Image as ImageIcon, BookOpen, PenTool, Sparkles, User, LogOut, Cloud } from 'lucide-react';
+import { Grid3X3, BookOpen, PenTool, Sparkles, User, LogOut, Cloud, PlusCircle } from 'lucide-react';
 
 export default function Navbar({
   activeTab,
@@ -9,14 +9,23 @@ export default function Navbar({
   currentUser,
   onOpenAuth,
   onOpenAccount,
-  onLogout
+  onLogout,
+  onOpenDifficulty
 }) {
   const navItems = [
     { id: 'play', label: 'Play', icon: Grid3X3 },
-    { id: 'upload', label: 'Scan Image', shortLabel: 'Scan', icon: ImageIcon },
+    { id: 'new', label: 'New Game', shortLabel: 'New', icon: Sparkles, isAction: true },
     { id: 'create', label: 'Create Custom', shortLabel: 'Create', icon: PenTool },
     { id: 'library', label: 'Archive', shortLabel: 'Archive', icon: BookOpen }
   ];
+
+  const handleNavClick = (item) => {
+    if (item.isAction) {
+      if (onOpenDifficulty) onOpenDifficulty();
+    } else {
+      setActiveTab(item.id);
+    }
+  };
 
   return (
     <>
@@ -36,12 +45,13 @@ export default function Navbar({
                 <h1 className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight leading-none">
                   Sudoku Lens
                 </h1>
-                <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                  AI Vision
+                <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center space-x-0.5">
+                  <Cloud className="w-2.5 h-2.5 inline text-blue-600 mr-0.5" />
+                  <span>Cloud</span>
                 </span>
               </div>
               <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
-                Image Scanner & Interactive Solver
+                Interactive Sudoku & Cloud Solver
               </p>
             </div>
           </div>
@@ -54,14 +64,16 @@ export default function Navbar({
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleNavClick(item)}
                   className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    isActive
+                    item.isAction
+                      ? 'text-blue-700 hover:bg-blue-50'
+                      : isActive
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className={`w-4 h-4 ${item.isAction ? 'text-blue-600' : ''}`} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -159,9 +171,11 @@ export default function Navbar({
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleNavClick(item)}
                 className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
-                  isActive
+                  item.isAction
+                    ? 'text-blue-600 font-bold active:scale-95'
+                    : isActive
                     ? 'text-blue-600 bg-blue-50/80 font-bold'
                     : 'text-slate-500 hover:text-slate-800 font-medium'
                 }`}

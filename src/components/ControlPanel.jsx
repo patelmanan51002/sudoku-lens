@@ -32,7 +32,7 @@ export default function ControlPanel({
   puzzleDate,
   onUpdateDate,
   puzzleStatus,
-  onNewScan,
+  onNewRandom,
   onNewCreate
 }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -197,12 +197,12 @@ export default function ControlPanel({
             </span>
           </p>
           <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
-            {onNewScan && (
+            {onNewRandom && (
               <button
-                onClick={onNewScan}
+                onClick={onNewRandom}
                 className="px-3.5 py-1.5 rounded-xl bg-white text-emerald-700 font-bold text-xs hover:bg-emerald-50 transition-colors shadow-sm"
               >
-                Scan New Image
+                New Puzzle
               </button>
             )}
             {onNewCreate && (

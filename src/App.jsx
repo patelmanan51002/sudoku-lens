@@ -3,13 +3,13 @@ import Navbar from './components/Navbar';
 import SudokuBoard from './components/SudokuBoard';
 import ControlPanel from './components/ControlPanel';
 import Keypad from './components/Keypad';
-import ImageUploader from './components/ImageUploader';
-import ReviewModal from './components/ReviewModal';
+import DifficultyModal from './components/DifficultyModal';
 import LibraryView from './components/LibraryView';
 import WinModal from './components/WinModal';
 import ManualCreator from './components/ManualCreator';
 import AuthModal from './components/AuthModal';
 import AccountModal from './components/AccountModal';
+import { createRandomPuzzle } from './services/sudokuGenerator';
 import { useAuth } from './contexts/AuthContext';
 import { importAccountSyncPayload } from './services/firebase';
 import {
@@ -148,8 +148,9 @@ export default function App() {
   const [validationAlert, setValidationAlert] = useState(null);
   const [showWinModal, setShowWinModal] = useState(false);
 
-  // Review modal state for newly scanned image
-  const [reviewData, setReviewData] = useState(null);
+  // Difficulty modal & generator state
+  const [isDifficultyModalOpen, setIsDifficultyModalOpen] = useState(false);
+  const [isGeneratingPuzzle, setIsGeneratingPuzzle] = useState(false);
 
   // Active puzzle shorthand refs
   const grid = currentPuzzle.currentGrid;
@@ -490,48 +491,32 @@ export default function App() {
     }
   };
 
-  // OCR finished -> show review modal
-  const handlePuzzleExtracted = (extractedInfo) => {
-    setReviewData(extractedInfo);
-  };
-
-  // Sample puzzle selected -> directly load or review
-  const handleSelectSample = (sampleData) => {
-    setReviewData(sampleData);
-  };
-
-  // Confirm review modal -> creates new active puzzle and starts game
-  const handleConfirmReview = (confirmed) => {
-    const newId = 'sudoku-' + Date.now();
-    const newPuzzle = {
-      id: newId,
-      title: confirmed.title || 'Scanned Sudoku',
-      imageDate: confirmed.imageDate || getSystemDateTimeISO(),
-      createdAt: getSystemDateTimeISO(),
-      updatedAt: getSystemDateTimeISO(),
-      thumbnailUrl: confirmed.thumbnailUrl,
-      givenGrid: confirmed.givenGrid,
-      currentGrid: confirmed.givenGrid.map((r) => [...r]),
-      notes: {},
-      history: [],
-      redoStack: [],
-      status: 'Untouched',
-      elapsedTime: 0,
-      completionTime: null,
-      hasCheckerboard: confirmed.hasCheckerboard ?? true
-    };
-
-    const saved = savePuzzle(newPuzzle);
-    if (currentUser) {
-      syncUserPuzzle(currentUser.uid, saved);
+  // Generate random Sudoku by difficulty (Easy, Medium, Hard, Expert)
+  const handleGenerateNewPuzzle = async (difficulty = 'medium') => {
+    setIsGeneratingPuzzle(true);
+    try {
+      const newPuzzle = await createRandomPuzzle(difficulty);
+      const saved = savePuzzle(newPuzzle);
+      if (currentUser) {
+        syncUserPuzzle(currentUser.uid, saved);
+      }
+      setPuzzles((prev) => [saved, ...prev]);
+      setActiveId(newPuzzle.id);
+      setActivePuzzleId(newPuzzle.id);
+      setActiveTab('play');
+      setSelectedCell(null);
+      setValidationAlert(null);
+      setIsTimerRunning(false);
+      setIsDifficultyModalOpen(false);
+    } catch (err) {
+      console.error('Failed to generate puzzle:', err);
+      setValidationAlert({
+        type: 'error',
+        message: 'Failed to generate a new puzzle. Please try again.'
+      });
+    } finally {
+      setIsGeneratingPuzzle(false);
     }
-    setPuzzles((prev) => [saved, ...prev]);
-    setActiveId(newId);
-    setActivePuzzleId(newId);
-    setReviewData(null);
-    setActiveTab('play');
-    setSelectedCell(null);
-    setIsTimerRunning(false);
   };
 
   // Create custom Sudoku manually
@@ -579,6 +564,7 @@ export default function App() {
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onOpenAccount={() => setIsAccountModalOpen(true)}
         onLogout={handleLogout}
+        onOpenDifficulty={() => setIsDifficultyModalOpen(true)}
       />
 
       {/* Auth Floating Toast Notification */}
@@ -669,7 +655,7 @@ export default function App() {
               puzzleDate={currentPuzzle.imageDate || currentPuzzle.createdAt}
               onUpdateDate={(newDate) => handleUpdatePuzzleDate(currentPuzzle.id, newDate)}
               puzzleStatus={currentPuzzle.status}
-              onNewScan={() => setActiveTab('upload')}
+              onNewRandom={() => setIsDifficultyModalOpen(true)}
               onNewCreate={() => setActiveTab('create')}
             />
 
@@ -688,14 +674,6 @@ export default function App() {
           </div>
         )}
 
-        {activeTab === 'upload' && (
-          <ImageUploader
-            onPuzzleExtracted={handlePuzzleExtracted}
-            onSelectSample={handleSelectSample}
-            onSwitchToManual={() => setActiveTab('create')}
-          />
-        )}
-
         {activeTab === 'create' && (
           <ManualCreator
             onCreatePuzzle={handleCreateCustomPuzzle}
@@ -710,20 +688,19 @@ export default function App() {
             onSelectPuzzle={handleSelectPuzzle}
             onDeletePuzzle={handleDeletePuzzle}
             onUpdatePuzzleDate={handleUpdatePuzzleDate}
-            onNewScan={() => setActiveTab('upload')}
+            onNewRandom={() => setIsDifficultyModalOpen(true)}
             onNewCreate={() => setActiveTab('create')}
           />
         )}
       </main>
 
-      {/* OCR Review & Confirm Modal */}
-      {reviewData && (
-        <ReviewModal
-          data={reviewData}
-          onConfirm={handleConfirmReview}
-          onCancel={() => setReviewData(null)}
-        />
-      )}
+      {/* Difficulty Selection & Random Puzzle Generator Modal */}
+      <DifficultyModal
+        isOpen={isDifficultyModalOpen}
+        onClose={() => setIsDifficultyModalOpen(false)}
+        onSelectDifficulty={handleGenerateNewPuzzle}
+        isGenerating={isGeneratingPuzzle}
+      />
 
       {/* Win Celebration Modal */}
       {showWinModal && (
@@ -734,9 +711,9 @@ export default function App() {
             setShowWinModal(false);
             setActiveTab('library');
           }}
-          onNewScan={() => {
+          onNewRandom={() => {
             setShowWinModal(false);
-            setActiveTab('upload');
+            setIsDifficultyModalOpen(true);
           }}
         />
       )}

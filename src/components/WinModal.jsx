@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Trophy, Clock, Calendar, Check, BookOpen, Upload, X } from 'lucide-react';
+import { Trophy, Clock, Calendar, Check, BookOpen, Sparkles, X } from 'lucide-react';
 import { formatHumanDuration, formatDateTime } from '../utils/dateUtils';
 
 export default function WinModal({
   puzzle,
   onClose,
   onGoToLibrary,
-  onNewScan
+  onNewRandom
 }) {
   useEffect(() => {
     // Launch celebratory confetti bursts
@@ -102,11 +102,11 @@ export default function WinModal({
             </button>
 
             <button
-              onClick={onNewScan}
+              onClick={onNewRandom}
               className="py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center space-x-1.5"
             >
-              <Upload className="w-4 h-4 text-slate-500" />
-              <span>Scan Another</span>
+              <Sparkles className="w-4 h-4 text-blue-600" />
+              <span>New Puzzle</span>
             </button>
           </div>
         </div>
