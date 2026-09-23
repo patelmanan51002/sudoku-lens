@@ -416,17 +416,45 @@ export function importAccountSyncPayload(rawInput) {
  */
 export function onAppAuthStateChanged(callback) {
   if (auth) {
-    return onAuthStateChanged(auth, (user) => {
-      if (user) {
-        callback({
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName || user.email.split('@')[0]
-        });
-      } else {
-        callback(null);
+    let initialFired = false;
+    const fallbackTimer = setTimeout(() => {
+      if (!initialFired) {
+        initialFired = true;
+        callback(getLocalSession());
       }
-    });
+    }, 1500);
+
+    try {
+      const unsub = onAuthStateChanged(
+        auth,
+        (user) => {
+          initialFired = true;
+          clearTimeout(fallbackTimer);
+          if (user) {
+            callback({
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName || user.email.split('@')[0]
+            });
+          } else {
+            callback(null);
+          }
+        },
+        (error) => {
+          console.warn('Firebase onAuthStateChanged error:', error);
+          initialFired = true;
+          clearTimeout(fallbackTimer);
+          callback(getLocalSession());
+        }
+      );
+      return () => {
+        clearTimeout(fallbackTimer);
+        if (typeof unsub === 'function') unsub();
+      };
+    } catch (e) {
+      console.warn('Failed to attach Firebase auth listener:', e);
+      clearTimeout(fallbackTimer);
+    }
   }
 
   // Local engine session check with live listener subscription

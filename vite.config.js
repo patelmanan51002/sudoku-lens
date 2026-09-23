@@ -1,12 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Use base '/sudoku-lens/' for GitHub Pages in production, '/' for local dev
-export default defineConfig(({ command }) => ({
+// Firebase Hosting serves from the root domain '/'
+export default defineConfig({
   plugins: [react()],
-  base: command === 'build' ? '/sudoku-lens/' : '/',
+  base: '/',
   server: {
     port: 3000,
     open: false
   }
-}));
+});
