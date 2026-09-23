@@ -9,7 +9,7 @@ import WinModal from './components/WinModal';
 import ManualCreator from './components/ManualCreator';
 import AuthModal from './components/AuthModal';
 import AccountModal from './components/AccountModal';
-import { createRandomPuzzle } from './services/sudokuGenerator';
+import { createRandomPuzzle, formatDifficulty } from './services/sudokuGenerator';
 import { useAuth } from './contexts/AuthContext';
 import { importAccountSyncPayload } from './services/firebase';
 import {
@@ -17,6 +17,7 @@ import {
   syncUserPuzzle,
   removeUserPuzzle,
   subscribeToUserPuzzles,
+  subscribeToUserTombstones,
   mergePuzzles
 } from './services/cloudSync';
 import {
@@ -28,7 +29,8 @@ import {
   setActivePuzzleId,
   getSettings,
   saveSettings,
-  createSamplePuzzle
+  createSamplePuzzle,
+  getDeletedPuzzleIds
 } from './utils/storage';
 import { validateSudoku, isBoardComplete } from './utils/sudokuSolver';
 import { getSystemDateTimeISO } from './utils/dateUtils';
@@ -93,7 +95,8 @@ export default function App() {
       return;
     }
 
-    let unsub = () => {};
+    let unsubPuzzles = () => {};
+    let unsubTombstones = () => {};
     let isMounted = true;
 
     (async () => {
@@ -102,8 +105,9 @@ export default function App() {
         const cloudList = await fetchUserPuzzles(currentUser.uid);
         if (!isMounted) return;
 
-        // Merge local puzzles with Firestore puzzles without data loss
-        const { merged, toSyncToCloud } = mergePuzzles(localList, cloudList);
+        const deletedIds = getDeletedPuzzleIds();
+        // Merge local puzzles with Firestore puzzles without data loss and respecting deletions
+        const { merged, toSyncToCloud } = mergePuzzles(localList, cloudList, deletedIds);
 
         setPuzzles(merged);
         try {
@@ -123,15 +127,28 @@ export default function App() {
           await syncUserPuzzle(currentUser.uid, p);
         }
 
-        // Real-time listener for cross-device updates
-        unsub = subscribeToUserPuzzles(currentUser.uid, (remoteList) => {
-          if (!isMounted || !remoteList || remoteList.length === 0) return;
+        // Real-time listener for cross-device puzzle updates
+        unsubPuzzles = subscribeToUserPuzzles(currentUser.uid, (remoteList) => {
+          if (!isMounted) return;
           setPuzzles((prevList) => {
-            const { merged: updatedMerged } = mergePuzzles(prevList, remoteList);
+            const currentDeleted = getDeletedPuzzleIds();
+            const { merged: updatedMerged } = mergePuzzles(prevList, remoteList, currentDeleted);
             try {
               localStorage.setItem('sudoku_app_puzzles_v2', JSON.stringify(updatedMerged));
             } catch (e) {}
             return updatedMerged;
+          });
+        });
+
+        // Real-time listener for cross-device deletions (tombstones)
+        unsubTombstones = subscribeToUserTombstones(currentUser.uid, (deletedId) => {
+          if (!isMounted) return;
+          setPuzzles((prevList) => {
+            const updated = prevList.filter((p) => p.id !== deletedId);
+            try {
+              localStorage.setItem('sudoku_app_puzzles_v2', JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
           });
         });
       } catch (err) {
@@ -141,7 +158,8 @@ export default function App() {
 
     return () => {
       isMounted = false;
-      unsub();
+      unsubPuzzles();
+      unsubTombstones();
     };
   }, [currentUser]);
 
@@ -530,18 +548,66 @@ export default function App() {
     setIsTimerRunning(false);
   };
 
-  // Delete puzzle
-  const handleDeletePuzzle = (id) => {
+  // Delete puzzle with cross-device sync
+  const handleDeletePuzzle = async (id) => {
     const updated = deletePuzzle(id);
-    if (currentUser) {
-      removeUserPuzzle(currentUser.uid, id);
-    }
     setPuzzles(updated);
     if (activeId === id) {
       const nextId = updated[0]?.id || '';
       setActiveId(nextId);
       setActivePuzzleId(nextId);
       setIsTimerRunning(false);
+    }
+    if (currentUser) {
+      await removeUserPuzzle(currentUser.uid, id);
+    }
+  };
+
+  // Regenerate puzzle: Discards current untouched puzzle and generates a fresh one of the same difficulty
+  const handleRegeneratePuzzle = async () => {
+    if (isGeneratingPuzzle) return;
+    const previousId = currentPuzzle.id;
+    const diff = currentPuzzle.difficulty || 'medium';
+
+    setIsGeneratingPuzzle(true);
+    try {
+      // 1. Generate a new puzzle of the same difficulty
+      const newPuzzle = await createRandomPuzzle(diff);
+
+      // 2. Discard previous untouched puzzle from storage, Firestore, and state
+      deletePuzzle(previousId);
+      if (currentUser) {
+        await removeUserPuzzle(currentUser.uid, previousId);
+      }
+
+      // 3. Save new puzzle
+      const saved = savePuzzle(newPuzzle);
+      setPuzzles((prevList) => [
+        saved,
+        ...prevList.filter((p) => p.id !== previousId && p.id !== saved.id)
+      ]);
+      setActiveId(newPuzzle.id);
+      setActivePuzzleId(newPuzzle.id);
+      setSelectedCell(null);
+      setIsTimerRunning(false);
+
+      if (currentUser && saved) {
+        await syncUserPuzzle(currentUser.uid, saved);
+      }
+
+      setValidationAlert({
+        type: 'info',
+        message: `🔄 Re-rolled a fresh ${formatDifficulty(diff)} Sudoku! Previous untouched puzzle discarded.`
+      });
+      setTimeout(() => setValidationAlert(null), 3500);
+    } catch (err) {
+      console.error('Failed to regenerate puzzle:', err);
+      setValidationAlert({
+        type: 'error',
+        message: 'Failed to re-roll puzzle. Please try again.'
+      });
+    } finally {
+      setIsGeneratingPuzzle(false);
     }
   };
 
@@ -683,6 +749,51 @@ export default function App() {
               </div>
             )}
 
+            {/* Active Puzzle Header: Title, Level Badge, and Regenerate button */}
+            <div className="w-full max-w-[min(100vw-1.5rem,480px,52vh)] mx-auto mb-2 flex items-center justify-between px-1">
+              <div className="flex items-center space-x-2 truncate">
+                <span className="font-extrabold text-sm sm:text-base text-slate-800 truncate">
+                  {currentPuzzle.title || 'Sudoku Puzzle'}
+                </span>
+                {currentPuzzle.difficulty && (
+                  <span
+                    className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shrink-0 ${
+                      currentPuzzle.difficulty === 'easy'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : currentPuzzle.difficulty === 'medium'
+                        ? 'bg-blue-100 text-blue-800'
+                        : currentPuzzle.difficulty === 'hard'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}
+                  >
+                    {formatDifficulty(currentPuzzle.difficulty)}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-1.5 shrink-0">
+                {currentPuzzle.status === 'Untouched' && (
+                  <button
+                    onClick={handleRegeneratePuzzle}
+                    disabled={isGeneratingPuzzle}
+                    className="flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all active:scale-95 shadow-2xs group"
+                    title="Don't like this puzzle? Re-roll another! The untouched puzzle won't be saved."
+                  >
+                    <span className="text-xs group-hover:rotate-180 transition-transform duration-300">🎲</span>
+                    <span className="hidden xs:inline">Re-roll</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsDifficultyModalOpen(true)}
+                  className="flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all active:scale-95"
+                  title="Choose difficulty level"
+                >
+                  <span>Level</span>
+                </button>
+              </div>
+            </div>
+
             {/* 9x9 Sudoku Board */}
             <SudokuBoard
               grid={grid}
@@ -725,6 +836,8 @@ export default function App() {
               puzzleStatus={currentPuzzle.status}
               onNewRandom={() => setIsDifficultyModalOpen(true)}
               onNewCreate={() => setActiveTab('create')}
+              onRegenerate={handleRegeneratePuzzle}
+              isUntouched={currentPuzzle.status === 'Untouched'}
             />
 
             {/* On-Screen Keypad with remaining counts and erase button */}

@@ -33,7 +33,9 @@ export default function ControlPanel({
   onUpdateDate,
   puzzleStatus,
   onNewRandom,
-  onNewCreate
+  onNewCreate,
+  onRegenerate,
+  isUntouched
 }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [dateValue, setDateValue] = useState(toInputDateTimeValue(puzzleDate));
@@ -173,14 +175,25 @@ export default function ControlPanel({
           <span>{isNotesMode ? 'Notes ON' : 'Pencil'}</span>
         </button>
 
-        <button
-          onClick={() => setShowResetConfirm(true)}
-          className="flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-[11px] sm:text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation"
-          title="Reset board to initial puzzle"
-        >
-          <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5" />
-          <span>Reset</span>
-        </button>
+        {isUntouched && onRegenerate ? (
+          <button
+            onClick={onRegenerate}
+            className="flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 text-[11px] sm:text-xs font-bold transition-all active:scale-95 shadow-xs touch-manipulation group"
+            title="Don't like this puzzle? Re-roll another! The untouched puzzle won't be saved."
+          >
+            <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 text-indigo-600 group-hover:rotate-180 transition-transform duration-300" />
+            <span>Re-roll</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-[11px] sm:text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation"
+            title="Reset board to initial puzzle"
+          >
+            <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5" />
+            <span>Reset</span>
+          </button>
+        )}
       </div>
 
       {/* If already finished, display Solved & Verified status instead of asking to validate */}

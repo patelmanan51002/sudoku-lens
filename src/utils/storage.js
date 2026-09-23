@@ -114,10 +114,38 @@ export function savePuzzle(puzzle) {
   }
 }
 
+const STORAGE_KEY_DELETED = 'sudoku_app_deleted_ids';
+
 /**
- * Deletes a puzzle by id
+ * Retrieves set of deleted puzzle IDs to prevent resurrection during sync
+ */
+export function getDeletedPuzzleIds() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_DELETED);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+}
+
+/**
+ * Records a deleted puzzle ID tombstone
+ */
+export function addDeletedPuzzleId(id) {
+  if (!id) return;
+  try {
+    const set = getDeletedPuzzleIds();
+    set.add(id);
+    localStorage.setItem(STORAGE_KEY_DELETED, JSON.stringify(Array.from(set)));
+  } catch (e) {}
+}
+
+/**
+ * Deletes a puzzle by id and records tombstone
  */
 export function deletePuzzle(id) {
+  if (!id) return [];
+  addDeletedPuzzleId(id);
   try {
     const puzzles = getSavedPuzzles().filter(p => p.id !== id);
     localStorage.setItem(STORAGE_KEY_PUZZLES, JSON.stringify(puzzles));

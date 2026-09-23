@@ -1,39 +1,53 @@
-# 🧩 Sudoku Lens - Image Scanner & Interactive Solver
+# 🧩 Sudoku Lens - Interactive Cloud Sudoku & Solver
 
-A modern, responsive web application that scans any Sudoku puzzle from an image (newspaper, magazine, app screenshot), extracts the 9×9 grid using computer vision & OCR, and provides a full-featured interactive solving experience.
+A modern, responsive web application offering instant random Sudoku generation across 4 verified difficulty tiers, custom board creation, and real-time cross-device cloud synchronization powered by **Firebase**.
 
-![Sudoku App Preview](src/assets/sample_puzzle.png)
+🔗 **Live Web App**: [https://sudoku-lens-app.web.app](https://sudoku-lens-app.web.app)
+
+---
 
 ## ✨ Features
 
-- 📷 **Image Scanner & OCR**:
-  - Drag-and-drop, browse files, or paste directly from clipboard (`Ctrl+V`).
-  - Pre-processes contrast, crops 81 cells, and recognizes digits with **Tesseract.js**.
-  - Side-by-side **Review & Confirm Modal** to inspect and correct any digit before solving.
-  - Alternating light-blue checkerboard block styling matching newspaper puzzle formats.
-- ✏️ **Manual Sudoku Creation (No Image Required)**:
-  - Create custom puzzles on a blank 9×9 grid.
-  - Real-time conflict validation while placing starting clues.
-  - Lock clues and transition into solver with 1 click.
-- 🎮 **Full Solving Controls**:
-  - **Undo (`Ctrl+Z`)** & **Redo (`Ctrl+Y`)** with deep move history stack.
-  - **Reset**: Revert board to initial clues with safety prompt.
-  - **Validate Sudoku**: Activated when all 81 cells are filled. Verifies rows, columns, and 3×3 blocks with celebratory confetti.
-  - **Persistent Solved State**: Validated puzzles remain marked as complete on refresh without asking to validate again.
-- ⌨️ **Cross-Platform Input**:
-  - **Laptop/Desktop**: Full keyboard controls (`1-9`, `Backspace`/`Delete`, arrow keys, `N` for notes, `Ctrl+Z`, `Ctrl+Y`).
-  - **Mobile/Tablet**: Native system keyboard (`inputmode="numeric"`) or thumb-friendly on-screen keypad.
-- 📝 **Pencil / Notes Mode**: Candidate digits (1–9) inside empty cells.
-- 🎨 **Auto-Highlighting ("Pen & Paper" Toggle)**:
-  - Turn off highlights in the top bar for an authentic, distraction-free pen-and-paper experience.
-- 💾 **Continuous Auto-Save**:
-  - Every move, note, and timer tick auto-saves to `localStorage`.
-- ⏱️ **Completion Timer**:
-  - Live tracking timer with Pause/Resume, recording exact solving time.
-- 📚 **Date-Wise Archive & Library**:
-  - Puzzles grouped date-wise (defaults to system time, user-editable).
-  - Status filters: **All**, **Finished**, **In Progress**, **Untouched**.
-  - **Export & Import Backup (JSON)** for easy cloud-free backups.
+### 🎲 Multi-Difficulty Random Sudoku Generator
+- **4 Verified Tiers**:
+  - ⚡ **Easy**: ~35–42 clues (Gentle & casual)
+  - 🛡️ **Medium**: ~28–34 clues (Balanced standard logic)
+  - 🔥 **Hard**: ~24–28 clues (Intense deduction & elimination)
+  - 🏆 **Expert**: ~20–24 clues (Minimal clues master challenge)
+- **Strict Difficulty Verification**: Every generated board is verified for clue count constraints and mathematically unique solvability.
+- **🔄 Instant Re-roll / Regenerate**:
+  - Don't like the generated puzzle? Click **Re-roll (🎲)** while the puzzle is untouched.
+  - Generates a fresh board of the same level and **automatically discards the previous untouched board** so your library stays clean!
+
+### ✏️ Custom Sudoku Builder
+- Build and solve any puzzle from physical newspapers, books, or magazines.
+- Real-time row, column, and 3×3 block conflict detection while placing starting clues.
+- 1-click lock & solve transition.
+
+### ☁️ Cross-Device Cloud Sync & Authentication
+- **Firebase Authentication**: Create an account or sign in securely across mobile, tablet, and desktop devices.
+- **Cloud Firestore Real-Time Sync**:
+  - Automatically syncs all saved puzzles, move history, pencil notes, and elapsed solving times.
+- **Prioritized Event-Based Sync**:
+  - **Validation & Win**: Completing and validating a board immediately records `completionTime` and syncs the Finished status.
+  - **State Transitions**: Real-time transition between `Untouched`, `In Progress`, and `Finished` reflects immediately on all devices.
+  - **Pause & Resume**: Pausing or resuming the timer instantly flushes time and board state to the cloud.
+  - **Cross-Device Deletion Sync**: Deleting a puzzle from your library on one device deletes it across all devices without accidental resurrection.
+  - **Continuous Safety Net**: Background periodic sync every 15 seconds during active play.
+
+### 🎮 Solving Controls & Experience
+- **Undo (`Ctrl+Z`)** & **Redo (`Ctrl+Y`)** with full move history.
+- **Pencil / Notes Mode (`N`)**: Enter candidate digits inside any empty cell.
+- **Auto-Highlighting ("Pen & Paper" Toggle)**: Toggle number and cell highlights on/off for a pure, distraction-free pen-and-paper experience.
+- **Validate Sudoku**: Activated when all 81 cells are filled, with celebratory confetti on successful completion.
+- **Live Timer**: Tracks elapsed time with Pause, Resume, and background tab auto-pause.
+
+### 📚 Date-Wise Archive & Library
+- Puzzles grouped by date (defaults to creation time, fully editable).
+- Filter by status: **All**, **Finished**, **In Progress**, **Untouched**.
+- **JSON Export & Import**: Backup and restore your puzzle archive anytime.
+
+---
 
 ## 🚀 Quick Start
 
@@ -42,7 +56,7 @@ A modern, responsive web application that scans any Sudoku puzzle from an image 
 npm install
 ```
 
-### 2. Run locally
+### 2. Run locally in development
 ```bash
 npm run dev
 ```
@@ -55,10 +69,15 @@ Or on Windows, simply double-click **`run.bat`**!
 npm run build
 ```
 
+### 4. Deploy to Firebase
+```bash
+npx firebase-tools deploy
+```
+
+---
+
 ## 🛠️ Tech Stack
-- **React 19**
-- **Vite**
-- **Tailwind CSS**
-- **Tesseract.js** (OCR)
-- **Lucide Icons**
-- **Canvas Confetti**
+- **Frontend**: React 19, Vite, Tailwind CSS, Lucide Icons, Canvas Confetti
+- **Sudoku Engine**: `sudoku-gen` (mathematical offline generator with verification)
+- **Backend / Cloud**: Firebase Authentication & Cloud Firestore
+- **Hosting**: Firebase Hosting ([sudoku-lens-app.web.app](https://sudoku-lens-app.web.app))

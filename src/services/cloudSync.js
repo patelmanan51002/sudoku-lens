@@ -7,6 +7,7 @@ import {
   deleteDoc,
   onSnapshot
 } from 'firebase/firestore';
+import { getDeletedPuzzleIds, addDeletedPuzzleId, deletePuzzle } from '../utils/storage';
 
 /**
  * Firestore does NOT support nested arrays (like number[][]).
@@ -106,25 +107,26 @@ function deserializeFromFirestore(data) {
 }
 
 /**
- * Merges local and cloud puzzle lists intelligently:
- * - If puzzle only exists in one list, keep it.
- * - If puzzle exists in both, keep the one with newer updatedAt or more progress.
+ * Merges local and cloud puzzle lists intelligently with tombstone (deletion) awareness:
+ * - Deleted puzzles are never resurrected.
+ * - If puzzle only exists in one active list, it is kept.
+ * - If puzzle exists in both, keeps newer updatedAt or higher progress.
  * - Returns { merged, toSyncToCloud }
  */
-export function mergePuzzles(localList = [], cloudList = []) {
+export function mergePuzzles(localList = [], cloudList = [], deletedIds = getDeletedPuzzleIds()) {
   const map = new Map();
   const toSyncToCloud = [];
 
-  // Seed with cloud puzzles
+  // Seed with cloud puzzles (filtering out deleted ones)
   for (const cp of cloudList) {
-    if (cp && cp.id) {
+    if (cp && cp.id && !deletedIds.has(cp.id)) {
       map.set(cp.id, cp);
     }
   }
 
   // Compare with local puzzles
   for (const lp of localList) {
-    if (!lp || !lp.id) continue;
+    if (!lp || !lp.id || deletedIds.has(lp.id)) continue;
     const existing = map.get(lp.id);
     if (!existing) {
       // Local puzzle not in cloud -> retain and sync to cloud
@@ -155,7 +157,7 @@ export function mergePuzzles(localList = [], cloudList = []) {
 }
 
 /**
- * Loads all puzzles belonging to a specific user
+ * Loads all puzzles belonging to a specific user and syncs tombstones
  */
 export async function fetchUserPuzzles(userId) {
   if (!userId) return [];
@@ -163,15 +165,31 @@ export async function fetchUserPuzzles(userId) {
   // If real Firestore is connected
   if (db) {
     try {
+      // 1. Fetch remote tombstones first to purge any deleted puzzles
+      try {
+        const tombstoneCol = collection(db, 'users', userId, 'tombstones');
+        const tombstoneSnap = await getDocs(tombstoneCol);
+        tombstoneSnap.forEach((d) => {
+          addDeletedPuzzleId(d.id);
+          deletePuzzle(d.id);
+        });
+      } catch (te) {
+        console.warn('Tombstone fetch notice:', te);
+      }
+
+      // 2. Fetch active puzzles
       const colRef = collection(db, 'users', userId, 'puzzles');
       const snap = await getDocs(colRef);
       const puzzles = [];
+      const deletedIds = getDeletedPuzzleIds();
+
       snap.forEach((d) => {
         const raw = d.data();
-        if (raw) {
+        if (raw && !deletedIds.has(d.id)) {
           puzzles.push(deserializeFromFirestore(raw));
         }
       });
+
       // Cache to local user-isolated store
       try {
         const key = `sudoku_app_user_puzzles_${userId}`;
@@ -187,7 +205,10 @@ export async function fetchUserPuzzles(userId) {
   try {
     const key = `sudoku_app_user_puzzles_${userId}`;
     const raw = localStorage.getItem(key);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const deletedIds = getDeletedPuzzleIds();
+      return JSON.parse(raw).filter((p) => !deletedIds.has(p.id));
+    }
   } catch (e) {
     // ignore
   }
@@ -200,6 +221,8 @@ export async function fetchUserPuzzles(userId) {
  */
 export async function syncUserPuzzle(userId, puzzle) {
   if (!userId || !puzzle || !puzzle.id) return;
+  const deletedIds = getDeletedPuzzleIds();
+  if (deletedIds.has(puzzle.id)) return; // Don't sync deleted puzzles
 
   // 1. Sync to Firestore if online & configured
   if (db) {
@@ -230,15 +253,27 @@ export async function syncUserPuzzle(userId, puzzle) {
 }
 
 /**
- * Deletes a puzzle for a specific user
+ * Deletes a puzzle for a specific user and records tombstones across devices
  */
 export async function removeUserPuzzle(userId, puzzleId) {
   if (!userId || !puzzleId) return;
 
+  // Record tombstone locally immediately
+  addDeletedPuzzleId(puzzleId);
+  deletePuzzle(puzzleId);
+
   if (db) {
     try {
+      // 1. Delete document from puzzles collection
       const docRef = doc(db, 'users', userId, 'puzzles', puzzleId);
       await deleteDoc(docRef);
+
+      // 2. Write tombstone to Firestore so all connected devices immediately catch deletion
+      const tombstoneRef = doc(db, 'users', userId, 'tombstones', puzzleId);
+      await setDoc(tombstoneRef, {
+        id: puzzleId,
+        deletedAt: new Date().toISOString()
+      });
     } catch (err) {
       console.error('Firestore delete failed:', err);
     }
@@ -269,9 +304,12 @@ export function subscribeToUserPuzzles(userId, callback) {
         colRef,
         (snapshot) => {
           const list = [];
+          const deletedIds = getDeletedPuzzleIds();
           snapshot.forEach((d) => {
             const raw = d.data();
-            if (raw) list.push(deserializeFromFirestore(raw));
+            if (raw && !deletedIds.has(d.id)) {
+              list.push(deserializeFromFirestore(raw));
+            }
           });
           callback(list);
         },
@@ -285,4 +323,33 @@ export function subscribeToUserPuzzles(userId, callback) {
   }
 
   return () => {};
+}
+
+/**
+ * Subscribes to remote deletions across devices in real time
+ */
+export function subscribeToUserTombstones(userId, onDeleted) {
+  if (!userId || !db) return () => {};
+
+  try {
+    const colRef = collection(db, 'users', userId, 'tombstones');
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const deletedId = change.doc.id;
+            addDeletedPuzzleId(deletedId);
+            deletePuzzle(deletedId);
+            if (onDeleted) onDeleted(deletedId);
+          }
+        });
+      },
+      (error) => {
+        console.warn('Real-time tombstone subscription notice:', error);
+      }
+    );
+  } catch (err) {
+    return () => {};
+  }
 }
