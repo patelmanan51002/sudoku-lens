@@ -23,6 +23,11 @@ function serializeForFirestore(puzzle) {
   if (Array.isArray(clone.currentGrid)) {
     clone.currentGrid = JSON.stringify(clone.currentGrid);
   }
+  if (Array.isArray(clone.solutionGrid)) {
+    clone.solutionGrid = JSON.stringify(clone.solutionGrid);
+  } else if (clone.solutionGrid === undefined) {
+    clone.solutionGrid = null;
+  }
   if (Array.isArray(clone.history)) {
     clone.history = JSON.stringify(clone.history);
   }
@@ -33,8 +38,13 @@ function serializeForFirestore(puzzle) {
     clone.notes = JSON.stringify(clone.notes);
   }
 
-  // Ensure no undefined values exist
-  return JSON.parse(JSON.stringify(clone));
+  // Ensure no undefined values exist anywhere
+  const clean = {};
+  for (const [key, value] of Object.entries(clone)) {
+    clean[key] = value === undefined ? null : value;
+  }
+
+  return clean;
 }
 
 /**
@@ -56,6 +66,13 @@ function deserializeFromFirestore(data) {
       puzzle.currentGrid = JSON.parse(puzzle.currentGrid);
     } catch (e) {
       console.warn('Failed to parse currentGrid JSON:', e);
+    }
+  }
+  if (typeof puzzle.solutionGrid === 'string') {
+    try {
+      puzzle.solutionGrid = JSON.parse(puzzle.solutionGrid);
+    } catch (e) {
+      puzzle.solutionGrid = null;
     }
   }
   if (typeof puzzle.history === 'string') {
@@ -80,7 +97,61 @@ function deserializeFromFirestore(data) {
     }
   }
 
+  puzzle.notes = puzzle.notes || {};
+  puzzle.history = puzzle.history || [];
+  puzzle.redoStack = puzzle.redoStack || [];
+  puzzle.elapsedTime = puzzle.elapsedTime || 0;
+
   return puzzle;
+}
+
+/**
+ * Merges local and cloud puzzle lists intelligently:
+ * - If puzzle only exists in one list, keep it.
+ * - If puzzle exists in both, keep the one with newer updatedAt or more progress.
+ * - Returns { merged, toSyncToCloud }
+ */
+export function mergePuzzles(localList = [], cloudList = []) {
+  const map = new Map();
+  const toSyncToCloud = [];
+
+  // Seed with cloud puzzles
+  for (const cp of cloudList) {
+    if (cp && cp.id) {
+      map.set(cp.id, cp);
+    }
+  }
+
+  // Compare with local puzzles
+  for (const lp of localList) {
+    if (!lp || !lp.id) continue;
+    const existing = map.get(lp.id);
+    if (!existing) {
+      // Local puzzle not in cloud -> retain and sync to cloud
+      map.set(lp.id, lp);
+      toSyncToCloud.push(lp);
+    } else {
+      // Both exist -> compare timestamp and progress
+      const localTime = new Date(lp.updatedAt || lp.createdAt || 0).getTime();
+      const cloudTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+
+      const localProgress = (lp.history?.length || 0) + (lp.elapsedTime || 0);
+      const cloudProgress = (existing.history?.length || 0) + (existing.elapsedTime || 0);
+
+      if (localTime > cloudTime || (localTime === cloudTime && localProgress > cloudProgress)) {
+        map.set(lp.id, lp);
+        toSyncToCloud.push(lp);
+      }
+    }
+  }
+
+  const merged = Array.from(map.values()).sort((a, b) => {
+    const da = new Date(a.imageDate || a.createdAt || 0).getTime();
+    const db = new Date(b.imageDate || b.createdAt || 0).getTime();
+    return db - da;
+  });
+
+  return { merged, toSyncToCloud };
 }
 
 /**
@@ -101,14 +172,12 @@ export async function fetchUserPuzzles(userId) {
           puzzles.push(deserializeFromFirestore(raw));
         }
       });
-      if (puzzles.length > 0) {
-        // Cache to local user-isolated store
-        try {
-          const key = `sudoku_app_user_puzzles_${userId}`;
-          localStorage.setItem(key, JSON.stringify(puzzles));
-        } catch (e) {}
-        return puzzles;
-      }
+      // Cache to local user-isolated store
+      try {
+        const key = `sudoku_app_user_puzzles_${userId}`;
+        localStorage.setItem(key, JSON.stringify(puzzles));
+      } catch (e) {}
+      return puzzles;
     } catch (err) {
       console.error('Firestore fetch failed:', err);
     }
@@ -127,7 +196,7 @@ export async function fetchUserPuzzles(userId) {
 }
 
 /**
- * Saves or updates a puzzle for a specific user
+ * Saves or updates a puzzle for a specific user in Firestore and local user store
  */
 export async function syncUserPuzzle(userId, puzzle) {
   if (!userId || !puzzle || !puzzle.id) return;

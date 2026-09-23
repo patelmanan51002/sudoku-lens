@@ -16,7 +16,8 @@ import {
   fetchUserPuzzles,
   syncUserPuzzle,
   removeUserPuzzle,
-  subscribeToUserPuzzles
+  subscribeToUserPuzzles,
+  mergePuzzles
 } from './services/cloudSync';
 import {
   getSavedPuzzles,
@@ -84,7 +85,7 @@ export default function App() {
     saveSettings(updated);
   };
 
-  // Synchronize with user account on login
+  // Synchronize with user account on login or refresh
   useEffect(() => {
     if (!currentUser) {
       const local = getSavedPuzzles();
@@ -97,35 +98,41 @@ export default function App() {
 
     (async () => {
       try {
-        const cloudPuzzles = await fetchUserPuzzles(currentUser.uid);
+        const localList = getSavedPuzzles();
+        const cloudList = await fetchUserPuzzles(currentUser.uid);
         if (!isMounted) return;
 
-        if (cloudPuzzles && cloudPuzzles.length > 0) {
-          setPuzzles(cloudPuzzles);
-          try {
-            localStorage.setItem('sudoku_app_puzzles_v2', JSON.stringify(cloudPuzzles));
-          } catch (e) {}
-          if (!cloudPuzzles.some((p) => p.id === activeId)) {
-            setActiveId(cloudPuzzles[0].id);
-            setActivePuzzleId(cloudPuzzles[0].id);
-          }
-        } else {
-          // Migrate local puzzles to cloud if user account has no cloud puzzles yet
-          const local = getSavedPuzzles();
-          for (const p of local) {
-            await syncUserPuzzle(currentUser.uid, p);
-          }
-          if (isMounted) setPuzzles(local);
+        // Merge local puzzles with Firestore puzzles without data loss
+        const { merged, toSyncToCloud } = mergePuzzles(localList, cloudList);
+
+        setPuzzles(merged);
+        try {
+          localStorage.setItem('sudoku_app_puzzles_v2', JSON.stringify(merged));
+        } catch (e) {}
+
+        const currentActiveId = getActivePuzzleId();
+        if (merged.some((p) => p.id === currentActiveId)) {
+          setActiveId(currentActiveId);
+        } else if (merged.length > 0) {
+          setActiveId(merged[0].id);
+          setActivePuzzleId(merged[0].id);
         }
 
+        // Push local-only or newer puzzles up to cloud
+        for (const p of toSyncToCloud) {
+          await syncUserPuzzle(currentUser.uid, p);
+        }
+
+        // Real-time listener for cross-device updates
         unsub = subscribeToUserPuzzles(currentUser.uid, (remoteList) => {
-          if (!isMounted) return;
-          if (remoteList && remoteList.length > 0) {
-            setPuzzles(remoteList);
+          if (!isMounted || !remoteList || remoteList.length === 0) return;
+          setPuzzles((prevList) => {
+            const { merged: updatedMerged } = mergePuzzles(prevList, remoteList);
             try {
-              localStorage.setItem('sudoku_app_puzzles_v2', JSON.stringify(remoteList));
+              localStorage.setItem('sudoku_app_puzzles_v2', JSON.stringify(updatedMerged));
             } catch (e) {}
-          }
+            return updatedMerged;
+          });
         });
       } catch (err) {
         console.error('Cloud sync error:', err);
@@ -162,25 +169,38 @@ export default function App() {
 
   // Auto-save helper: updates active puzzle state, localStorage, and cloud
   const updateCurrentPuzzle = useCallback((patch) => {
+    const updatedTime = getSystemDateTimeISO();
+    let saved = null;
+
     setPuzzles((prevList) => {
       const idx = prevList.findIndex((p) => p.id === currentPuzzle.id);
       if (idx === -1) return prevList;
       const updated = {
         ...prevList[idx],
         ...patch,
-        updatedAt: getSystemDateTimeISO()
+        updatedAt: updatedTime
       };
-      const saved = savePuzzle(updated);
-      if (currentUser) {
-        syncUserPuzzle(currentUser.uid, saved);
-      }
+      saved = savePuzzle(updated);
       const copy = [...prevList];
       copy[idx] = saved;
       return copy;
     });
+
+    if (currentUser && saved) {
+      syncUserPuzzle(currentUser.uid, saved);
+    }
   }, [currentPuzzle.id, currentUser]);
 
-  // Live Timer (starts only when user explicitly starts it, pauses when toggled or tab hidden)
+  // Toggle timer (Start / Pause / Resume) with instant state & cloud flush
+  const handleToggleTimer = () => {
+    const nextRunning = !isTimerRunning;
+    setIsTimerRunning(nextRunning);
+    if (!nextRunning && currentPuzzle) {
+      updateCurrentPuzzle({ elapsedTime: currentPuzzle.elapsedTime || 0 });
+    }
+  };
+
+  // Live Timer
   useEffect(() => {
     if (isFinished || !isTimerRunning || activeTab !== 'play') return;
 
@@ -193,9 +213,13 @@ export default function App() {
 
         const updatedTime = (p.elapsedTime || 0) + 1;
         const updated = { ...p, elapsedTime: updatedTime };
-        // Save to storage every 5 seconds to reduce write frequency while keeping live state
-        if (updatedTime % 5 === 0) {
+        // Save to storage every 3 seconds to keep progress updated
+        if (updatedTime % 3 === 0) {
           savePuzzle(updated);
+        }
+        // Periodic sync to cloud every 15 seconds
+        if (currentUser && updatedTime % 15 === 0) {
+          syncUserPuzzle(currentUser.uid, updated);
         }
         const copy = [...prevList];
         copy[idx] = updated;
@@ -204,18 +228,21 @@ export default function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [activeId, isFinished, isTimerRunning, activeTab]);
+  }, [activeId, isFinished, isTimerRunning, activeTab, currentUser]);
 
-  // Pause timer when tab is hidden
+  // Pause timer when tab is hidden and save current time
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
         setIsTimerRunning(false);
+        if (currentPuzzle) {
+          updateCurrentPuzzle({ elapsedTime: currentPuzzle.elapsedTime || 0 });
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
+  }, [currentPuzzle, updateCurrentPuzzle]);
 
   // Cell Selection
   const handleSelectCell = (cell) => {
@@ -497,9 +524,6 @@ export default function App() {
     try {
       const newPuzzle = await createRandomPuzzle(difficulty);
       const saved = savePuzzle(newPuzzle);
-      if (currentUser) {
-        syncUserPuzzle(currentUser.uid, saved);
-      }
       setPuzzles((prev) => [saved, ...prev]);
       setActiveId(newPuzzle.id);
       setActivePuzzleId(newPuzzle.id);
@@ -508,6 +532,10 @@ export default function App() {
       setValidationAlert(null);
       setIsTimerRunning(false);
       setIsDifficultyModalOpen(false);
+
+      if (currentUser && saved) {
+        await syncUserPuzzle(currentUser.uid, saved);
+      }
     } catch (err) {
       console.error('Failed to generate puzzle:', err);
       setValidationAlert({
@@ -520,7 +548,7 @@ export default function App() {
   };
 
   // Create custom Sudoku manually
-  const handleCreateCustomPuzzle = (customData) => {
+  const handleCreateCustomPuzzle = async (customData) => {
     const newId = 'sudoku-custom-' + Date.now();
     const newPuzzle = {
       id: newId,
@@ -531,6 +559,7 @@ export default function App() {
       thumbnailUrl: null,
       givenGrid: customData.givenGrid,
       currentGrid: customData.givenGrid.map((r) => [...r]),
+      solutionGrid: null,
       notes: {},
       history: [],
       redoStack: [],
@@ -541,15 +570,16 @@ export default function App() {
     };
 
     const saved = savePuzzle(newPuzzle);
-    if (currentUser) {
-      syncUserPuzzle(currentUser.uid, saved);
-    }
     setPuzzles((prev) => [saved, ...prev]);
     setActiveId(newId);
     setActivePuzzleId(newId);
     setActiveTab('play');
     setSelectedCell(null);
     setIsTimerRunning(false);
+
+    if (currentUser && saved) {
+      await syncUserPuzzle(currentUser.uid, saved);
+    }
   };
 
   return (
@@ -642,7 +672,7 @@ export default function App() {
               elapsedTime={currentPuzzle.elapsedTime || 0}
               completionTime={currentPuzzle.completionTime}
               isTimerRunning={isTimerRunning}
-              onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
+              onToggleTimer={handleToggleTimer}
               onStartTimer={() => setIsTimerRunning(true)}
               onUndo={handleUndo}
               onRedo={handleRedo}
