@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User, Cloud, CheckCircle2, AlertCircle, Loader2, Eye, EyeOff, Smartphone } from 'lucide-react';
+import { X, Lock, Mail, User, Cloud, CheckCircle2, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
-  const { login, signup, resetPassword, importSyncCode } = useAuth();
-  const [activeMode, setActiveMode] = useState('signin'); // 'signin' | 'signup' | 'sync'
+  const { login, signup, resetPassword } = useAuth();
+  const [activeMode, setActiveMode] = useState('signin'); // 'signin' | 'signup'
   const [isForgot, setIsForgot] = useState(false);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [syncInput, setSyncInput] = useState('');
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -23,33 +22,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   if (!isOpen) return null;
 
   const isSignUp = activeMode === 'signup';
-  const isSync = activeMode === 'sync';
-
-  // Handle Sync Code Import
-  const handleImportSync = async (e) => {
-    e.preventDefault();
-    if (!syncInput.trim() || loading) return;
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    setLoading(true);
-    try {
-      const user = importSyncCode(syncInput.trim());
-      const name = user?.displayName || user?.email?.split('@')[0] || 'User';
-      const msg = `🎉 Account & puzzles synced successfully! Welcome, ${name}!`;
-      setSuccessMsg(msg);
-      if (onAuthSuccess) onAuthSuccess(msg);
-      setTimeout(() => {
-        setSuccessMsg(null);
-        setErrorMsg(null);
-        setSyncInput('');
-        onClose();
-      }, 1200);
-    } catch (err) {
-      setErrorMsg(err.message || 'Invalid sync code or link.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -146,8 +118,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">
             {isForgot
               ? 'Reset Password'
-              : isSync
-              ? 'Sync from Another Device'
               : isSignUp
               ? 'Create Your Account'
               : 'Welcome Back'}
@@ -155,13 +125,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           <p className="text-xs text-slate-500 mt-1">
             {isForgot
               ? 'Enter your email to receive a password reset link'
-              : isSync
-              ? 'Paste your Mobile Sync Link or Sync Code from your laptop'
               : 'Save and continue your Sudoku puzzles seamlessly across any device'}
           </p>
         </div>
 
-        {/* Tab switch between Sign In, Sign Up, and Sync Device */}
+        {/* Tab switch between Sign In and Sign Up */}
         {!isForgot && (
           <div className="flex p-1 bg-slate-100 rounded-xl mb-5 text-xs font-bold">
             <button
@@ -190,68 +158,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             >
               Sign Up
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveMode('sync');
-                setErrorMsg(null);
-                setSuccessMsg(null);
-              }}
-              className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center space-x-1 ${
-                activeMode === 'sync' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>Sync Device</span>
-            </button>
           </div>
         )}
 
-        {/* TAB: Sync from Another Device */}
-        {isSync && !isForgot ? (
-          <form onSubmit={handleImportSync} className="space-y-3.5">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 leading-relaxed">
-              Created an account on your laptop? On your laptop, open <b>Account</b> → <b>Link Mobile</b>, copy the link or code, and paste it below to instantly log in!
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Paste Sync Link or Code
-              </label>
-              <textarea
-                rows={3}
-                value={syncInput}
-                onChange={(e) => setSyncInput(e.target.value)}
-                placeholder="Paste the https://... link or sync code here"
-                required
-                className="w-full p-2.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center space-x-2 animate-pop">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            {successMsg && (
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center space-x-2 animate-pop">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                <span>{successMsg}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || Boolean(successMsg)}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center space-x-1.5"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Import Account & Sign In</span>}
-            </button>
-          </form>
-        ) : (
-          /* Form: Sign In / Sign Up */
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+        {/* Form: Sign In / Sign Up */}
+        <form onSubmit={handleSubmit} className="space-y-3.5">
             {isSignUp && !isForgot && (
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
@@ -396,7 +307,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             )}
           </button>
         </form>
-        )}
 
         {isForgot && (
           <div className="mt-4 text-center">

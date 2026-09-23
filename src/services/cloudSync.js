@@ -111,9 +111,7 @@ export function subscribeToUserPuzzles(userId, callback) {
       return onSnapshot(colRef, (snapshot) => {
         const list = [];
         snapshot.forEach((d) => list.push(d.data()));
-        if (list.length > 0) {
-          callback(list);
-        }
+        callback(list);
       });
     } catch (err) {
       console.warn('Real-time listener setup failed:', err);

@@ -21,6 +21,16 @@ const STORAGE_KEY_FIREBASE_CONFIG = 'sudoku_app_firebase_config_v1';
 const STORAGE_KEY_LOCAL_USERS = 'sudoku_app_local_users_v1';
 const STORAGE_KEY_LOCAL_SESSION = 'sudoku_app_local_session_v1';
 
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyD01-AuXIOROjcJ6cVbRbLV5MzmNOiOQmg",
+  authDomain: "sudoku-lens-app.firebaseapp.com",
+  projectId: "sudoku-lens-app",
+  storageBucket: "sudoku-lens-app.firebasestorage.app",
+  messagingSenderId: "414225244704",
+  appId: "1:414225244704:web:57b13fde198249139c5245",
+  measurementId: "G-HHHN6ERN9V"
+};
+
 /**
  * Returns saved or environment Firebase configuration
  */
@@ -40,11 +50,12 @@ export function getFirebaseConfig() {
       projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
       storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
       messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: import.meta.env.VITE_FIREBASE_APP_ID
+      appId: import.meta.env.VITE_FIREBASE_APP_ID,
+      measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
     };
   }
 
-  return null;
+  return DEFAULT_FIREBASE_CONFIG;
 }
 
 export function saveFirebaseConfig(config) {

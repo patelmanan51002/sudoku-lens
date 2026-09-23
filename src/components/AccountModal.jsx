@@ -7,17 +7,12 @@ import {
   Eye,
   EyeOff,
   Cloud,
-  Smartphone,
-  Copy,
   Check,
   Trash2,
   AlertTriangle,
   KeyRound,
-  ShieldAlert,
   Loader2,
-  Calendar,
-  Layers,
-  ExternalLink
+  Layers
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
@@ -30,9 +25,9 @@ export default function AccountModal({
   onAccountDeleted,
   onToast
 }) {
-  const { updateProfile, changePassword, deleteAccount, generateSyncCode, isCloudReady, setFirebaseConfig } = useAuth();
+  const { updateProfile, changePassword, deleteAccount } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'sync' | 'cloud' | 'danger'
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'danger'
 
   // Edit Name
   const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
@@ -49,14 +44,6 @@ export default function AccountModal({
   const [passLoading, setPassLoading] = useState(false);
   const [passMsg, setPassMsg] = useState(null);
 
-  // Sync / Transfer
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
-
-  // Custom Firebase
-  const [fbConfigText, setFbConfigText] = useState('');
-  const [fbMsg, setFbMsg] = useState(null);
-
   // Delete Account
   const [deletePass, setDeletePass] = useState('');
   const [showDeletePass, setShowDeletePass] = useState(false);
@@ -69,10 +56,6 @@ export default function AccountModal({
   // Stats
   const totalPuzzles = puzzles.length;
   const finishedPuzzles = puzzles.filter((p) => p.status === 'Finished').length;
-
-  // Generate mobile sync link
-  const syncPayload = generateSyncCode(puzzles);
-  const mobileSyncUrl = `${window.location.origin}${window.location.pathname}?sync=${syncPayload}`;
 
   // Handle Name Update
   const handleUpdateName = async (e) => {
@@ -125,37 +108,6 @@ export default function AccountModal({
     }
   };
 
-  // Copy mobile sync link to clipboard
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(mobileSyncUrl);
-    setCopiedLink(true);
-    if (onToast) onToast({ type: 'success', message: '📋 Mobile sync link copied to clipboard!' });
-    setTimeout(() => setCopiedLink(false), 3000);
-  };
-
-  // Copy sync code to clipboard
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(syncPayload);
-    setCopiedCode(true);
-    if (onToast) onToast({ type: 'success', message: '📋 Sync code copied to clipboard!' });
-    setTimeout(() => setCopiedCode(false), 3000);
-  };
-
-  // Handle Firebase Config Save
-  const handleSaveFirebase = (e) => {
-    e.preventDefault();
-    try {
-      const parsed = JSON.parse(fbConfigText);
-      if (!parsed.apiKey || !parsed.projectId) {
-        throw new Error('Config must include at least apiKey and projectId.');
-      }
-      setFirebaseConfig(parsed);
-      setFbMsg({ type: 'success', text: 'Firebase config applied! Reloading...' });
-    } catch (err) {
-      setFbMsg({ type: 'error', text: 'Invalid JSON config: ' + err.message });
-    }
-  };
-
   // Handle Delete Account
   const handleDeleteAccount = async () => {
     if (!deletePass || deleteLoading) return;
@@ -199,52 +151,28 @@ export default function AccountModal({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex p-1 bg-slate-100 rounded-xl mb-5 overflow-x-auto text-xs font-bold">
+        <div className="flex p-1 bg-slate-100 rounded-xl mb-5 text-xs font-bold">
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
-            className={`flex-1 py-1.5 px-2 rounded-lg transition-all shrink-0 ${
+            className={`flex-1 py-1.5 px-3 rounded-lg transition-all ${
               activeTab === 'profile'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            Profile
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('sync')}
-            className={`flex-1 py-1.5 px-2 rounded-lg transition-all shrink-0 flex items-center justify-center space-x-1 ${
-              activeTab === 'sync'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>Link Mobile</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('cloud')}
-            className={`flex-1 py-1.5 px-2 rounded-lg transition-all shrink-0 flex items-center justify-center space-x-1 ${
-              activeTab === 'cloud'
-                ? 'bg-white text-emerald-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <Cloud className="w-3.5 h-3.5" />
-            <span>Cloud</span>
+            Profile & Security
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('danger')}
-            className={`flex-1 py-1.5 px-2 rounded-lg transition-all shrink-0 text-rose-600 ${
+            className={`py-1.5 px-4 rounded-lg transition-all text-rose-600 ${
               activeTab === 'danger'
                 ? 'bg-rose-50 shadow-sm font-black'
                 : 'text-rose-400 hover:text-rose-600'
             }`}
           >
-            Danger
+            Danger Zone
           </button>
         </div>
 
@@ -412,126 +340,7 @@ export default function AccountModal({
           </div>
         )}
 
-        {/* TAB 2: Sync with Mobile Device */}
-        {activeTab === 'sync' && (
-          <div className="space-y-4">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl">
-              <div className="flex items-center space-x-2 text-blue-900 font-bold text-xs mb-1">
-                <Smartphone className="w-4 h-4 text-blue-600" />
-                <span>Link & Continue on Mobile / Tablet</span>
-              </div>
-              <p className="text-[11px] text-blue-700 leading-relaxed">
-                Because this app runs directly on GitHub Pages, use this 1-click sync link to instantly transfer your account credentials and all saved puzzles to your phone!
-              </p>
-            </div>
-
-            {/* Option 1: Mobile Sync Link */}
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800">1. Instant Mobile Link</span>
-                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                  Recommended
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Copy this link and open it in your mobile browser (e.g. via WhatsApp, Email, or Notes). It will automatically sign you in and import all your puzzles!
-              </p>
-              <button
-                onClick={handleCopyLink}
-                className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-all shadow-xs ${
-                  copiedLink
-                    ? 'bg-emerald-600 text-white shadow-emerald-500/20'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 active:scale-95'
-                }`}
-              >
-                {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                <span>{copiedLink ? 'Link Copied to Clipboard!' : 'Copy Mobile Sync Link'}</span>
-              </button>
-            </div>
-
-            {/* Option 2: Text Sync Code */}
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2">
-              <span className="text-xs font-bold text-slate-800">2. Sync Code</span>
-              <p className="text-[11px] text-slate-500">
-                Or copy this sync code and paste it into the <b>"Sync Device"</b> tab on your phone's Sign In screen:
-              </p>
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={syncPayload}
-                  className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[11px] font-mono text-slate-500 truncate select-all"
-                />
-                <button
-                  onClick={handleCopyCode}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                    copiedCode
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                      : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  {copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: Google Firebase Cloud */}
-        {activeTab === 'cloud' && (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 p-3 rounded-2xl border bg-slate-50 border-slate-200">
-              <Cloud className={`w-5 h-5 ${isCloudReady ? 'text-emerald-600' : 'text-amber-500'}`} />
-              <div>
-                <div className="text-xs font-bold text-slate-800">
-                  Status: {isCloudReady ? 'Google Firebase Connected ☁️' : 'Device-to-Device Sync Mode'}
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  {isCloudReady
-                    ? 'All puzzles and accounts are synchronizing live with Firebase.'
-                    : 'Accounts & puzzles synchronize via Link/Code. You can connect a free Firebase project below for live real-time cloud sync.'}
-                </div>
-              </div>
-            </div>
-
-            <form onSubmit={handleSaveFirebase} className="space-y-2.5">
-              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                Firebase Project Config (JSON)
-              </label>
-              <textarea
-                rows={4}
-                value={fbConfigText}
-                onChange={(e) => setFbConfigText(e.target.value)}
-                placeholder={'{\n  "apiKey": "AIzaSy...",\n  "authDomain": "sudoku-app.firebaseapp.com",\n  "projectId": "sudoku-app"\n}'}
-                className="w-full p-2.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {fbMsg && (
-                <div className={`text-xs font-semibold ${fbMsg.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {fbMsg.text}
-                </div>
-              )}
-              <div className="flex items-center justify-between pt-1">
-                <a
-                  href="https://console.firebase.google.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-blue-600 hover:underline flex items-center space-x-1 font-semibold"
-                >
-                  <span>Firebase Console</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
-                >
-                  Connect Firebase
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* TAB 4: Danger Zone - Delete Account */}
+        {/* TAB 2: Danger Zone - Delete Account */}
         {activeTab === 'danger' && (
           <div className="space-y-4">
             <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl">

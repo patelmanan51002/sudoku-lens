@@ -25,3 +25,8 @@ dist-ssr
 
 # Temporary files
 eng.traineddata
+
+# Environment
+.env
+.env.*
+
