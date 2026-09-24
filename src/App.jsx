@@ -32,7 +32,7 @@ import {
   createSamplePuzzle,
   getDeletedPuzzleIds
 } from './utils/storage';
-import { validateSudoku, isBoardComplete } from './utils/sudokuSolver';
+import { validateSudoku, isBoardComplete, solveSudoku } from './utils/sudokuSolver';
 import { getSystemDateTimeISO } from './utils/dateUtils';
 
 export default function App() {
@@ -508,6 +508,128 @@ export default function App() {
     setSelectedCell({ r, c });
   };
 
+  // Provide Hint: reveals the correct digit in the selected cell or next logical cell (max 3 per puzzle)
+  const handleUseHint = () => {
+    if (isFinished) return;
+
+    const currentHintsUsed = currentPuzzle.hintsUsed || 0;
+    if (currentHintsUsed >= 3) {
+      setValidationAlert({
+        type: 'warning',
+        message: '💡 Maximum limit reached! You have already used all 3 hints allowed for this puzzle.'
+      });
+      return;
+    }
+
+    if (!isTimerRunning) {
+      setIsTimerRunning(true);
+    }
+
+    // Determine solution grid: either cached on puzzle or computed
+    let solution = currentPuzzle.solutionGrid;
+    if (!solution || solution.length !== 9) {
+      solution = solveSudoku(givenGrid && givenGrid.length === 9 ? givenGrid : grid);
+    }
+
+    if (!solution) {
+      setValidationAlert({
+        type: 'error',
+        message: 'Unable to calculate solution for this board.'
+      });
+      return;
+    }
+
+    // Priority 1: User's currently selected cell if not given and not already correct
+    let targetR = -1;
+    let targetC = -1;
+
+    if (
+      selectedCell &&
+      givenGrid[selectedCell.r][selectedCell.c] === 0 &&
+      grid[selectedCell.r][selectedCell.c] !== solution[selectedCell.r][selectedCell.c]
+    ) {
+      targetR = selectedCell.r;
+      targetC = selectedCell.c;
+    }
+
+    // Priority 2: Any incorrect cell already filled by user
+    if (targetR === -1) {
+      for (let r = 0; r < 9 && targetR === -1; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (
+            givenGrid[r][c] === 0 &&
+            grid[r][c] > 0 &&
+            grid[r][c] !== solution[r][c]
+          ) {
+            targetR = r;
+            targetC = c;
+            break;
+          }
+        }
+      }
+    }
+
+    // Priority 3: First empty cell
+    if (targetR === -1) {
+      for (let r = 0; r < 9 && targetR === -1; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (grid[r][c] === 0) {
+            targetR = r;
+            targetC = c;
+            break;
+          }
+        }
+      }
+    }
+
+    // If still no cell found, board is already complete!
+    if (targetR === -1) {
+      setValidationAlert({
+        type: 'info',
+        message: 'The board is already filled with correct digits!'
+      });
+      return;
+    }
+
+    const correctVal = solution[targetR][targetC];
+    const prevVal = grid[targetR][targetC];
+    const cellKey = `${targetR},${targetC}`;
+    const prevCellNotes = notes[cellKey] ? [...notes[cellKey]] : [];
+
+    const newGrid = grid.map((row) => [...row]);
+    newGrid[targetR][targetC] = correctVal;
+
+    const newNotesObj = { ...notes };
+    delete newNotesObj[cellKey];
+
+    const newHintsUsed = currentHintsUsed + 1;
+    const remainingHints = 3 - newHintsUsed;
+
+    const move = {
+      type: 'hint',
+      r: targetR,
+      c: targetC,
+      prevVal,
+      newVal: correctVal,
+      prevNotes: prevCellNotes
+    };
+
+    setSelectedCell({ r: targetR, c: targetC });
+
+    updateCurrentPuzzle({
+      currentGrid: newGrid,
+      notes: newNotesObj,
+      hintsUsed: newHintsUsed,
+      history: [...history, move],
+      redoStack: []
+    });
+
+    setValidationAlert({
+      type: 'info',
+      message: `💡 Hint: Revealed ${correctVal} at Row ${targetR + 1}, Col ${targetC + 1}! (${remainingHints} ${remainingHints === 1 ? 'hint' : 'hints'} left)`
+    });
+  };
+
   // Reset Board to initial given digits and reset timer
   const handleReset = () => {
     setIsTimerRunning(false);
@@ -516,6 +638,7 @@ export default function App() {
       currentGrid: initialGrid,
       elapsedTime: 0,
       notes: {},
+      hintsUsed: 0,
       history: [],
       redoStack: [],
       status: 'Untouched',
@@ -862,6 +985,8 @@ export default function App() {
               canRedo={redoStack.length > 0 && !isFinished && isTimerRunning}
               isNotesMode={isNotesMode}
               onToggleNotes={() => setIsNotesMode(!isNotesMode)}
+              hintsUsed={currentPuzzle.hintsUsed || 0}
+              onUseHint={handleUseHint}
               puzzleDate={currentPuzzle.imageDate || currentPuzzle.createdAt}
               onUpdateDate={(newDate) => handleUpdatePuzzleDate(currentPuzzle.id, newDate)}
               puzzleStatus={currentPuzzle.status}
@@ -878,6 +1003,8 @@ export default function App() {
               onErase={handleErase}
               isNotesMode={isNotesMode}
               onToggleNotes={() => setIsNotesMode(!isNotesMode)}
+              hintsUsed={currentPuzzle.hintsUsed || 0}
+              onUseHint={handleUseHint}
               autoHighlight={autoHighlight}
               isFinished={isFinished}
               isTimerRunning={isTimerRunning}

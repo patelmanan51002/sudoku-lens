@@ -10,7 +10,8 @@ import {
   Pencil,
   Calendar,
   AlertCircle,
-  Trophy
+  Trophy,
+  Lightbulb
 } from 'lucide-react';
 import { formatSeconds, formatHumanDuration, formatDateTime, toInputDateTimeValue } from '../utils/dateUtils';
 import { isBoardComplete, countFilled } from '../utils/sudokuSolver';
@@ -29,6 +30,8 @@ export default function ControlPanel({
   canRedo,
   isNotesMode,
   onToggleNotes,
+  hintsUsed = 0,
+  onUseHint,
   puzzleDate,
   onUpdateDate,
   puzzleStatus,
@@ -132,8 +135,8 @@ export default function ControlPanel({
         </div>
       </div>
 
-      {/* Action Buttons: Undo, Redo, Notes, Reset */}
-      <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+      {/* Action Buttons: Undo, Redo, Notes, Hint, Reset */}
+      <div className="grid grid-cols-5 gap-1 sm:gap-2">
         <button
           onClick={onUndo}
           disabled={!canUndo}
@@ -172,7 +175,38 @@ export default function ControlPanel({
           title="Toggle Pencil/Notes mode (N)"
         >
           <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5" />
-          <span>{isNotesMode ? 'Notes ON' : 'Pencil'}</span>
+          <span>{isNotesMode ? 'Notes' : 'Pencil'}</span>
+        </button>
+
+        <button
+          onClick={onUseHint}
+          disabled={hintsUsed >= 3 || puzzleStatus === 'Finished'}
+          className={`relative flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all touch-manipulation ${
+            hintsUsed < 3 && puzzleStatus !== 'Finished'
+              ? 'bg-amber-50/80 border-amber-200 text-amber-800 hover:bg-amber-100 hover:border-amber-300 active:scale-95 shadow-xs'
+              : 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
+          }`}
+          title={hintsUsed >= 3 ? 'All 3 hints used' : `Use Hint (${3 - hintsUsed} left)`}
+        >
+          <div className="relative">
+            <Lightbulb
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 ${
+                hintsUsed < 3 && puzzleStatus !== 'Finished'
+                  ? 'text-amber-500 fill-amber-300'
+                  : 'text-slate-300'
+              }`}
+            />
+            <span
+              className={`absolute -top-1.5 -right-2 px-1 py-0.2 rounded-full text-[9px] font-black leading-none ${
+                hintsUsed < 3 && puzzleStatus !== 'Finished'
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-slate-300 text-white'
+              }`}
+            >
+              {Math.max(0, 3 - hintsUsed)}
+            </span>
+          </div>
+          <span>Hint</span>
         </button>
 
         {isUntouched && onRegenerate ? (

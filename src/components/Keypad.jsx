@@ -1,5 +1,5 @@
 import React from 'react';
-import { Delete, Pencil, Smartphone, Keyboard } from 'lucide-react';
+import { Delete, Pencil, Smartphone, Keyboard, Lightbulb } from 'lucide-react';
 
 export default function Keypad({
   grid,
@@ -7,6 +7,8 @@ export default function Keypad({
   onErase,
   isNotesMode,
   onToggleNotes,
+  hintsUsed = 0,
+  onUseHint,
   autoHighlight,
   isFinished,
   isTimerRunning = false,
@@ -86,18 +88,37 @@ export default function Keypad({
         })}
       </div>
 
-      {/* Auxiliary Buttons below numpad: Notes Mode toggle & Erase */}
-      <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
+      {/* Auxiliary Buttons below numpad: Notes Mode toggle, Hint, and Erase */}
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
         <button
           onClick={onToggleNotes}
-          className={`flex items-center justify-center space-x-1.5 sm:space-x-2 py-2 sm:py-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation ${
+          className={`flex items-center justify-center space-x-1 sm:space-x-1.5 py-2 sm:py-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation ${
             isNotesMode
               ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-500/20'
               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
           }`}
+          title="Toggle Notes / Pencil mode"
         >
           <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-          <span>{isNotesMode ? 'Notes Mode Active' : 'Enable Notes'}</span>
+          <span className="truncate">{isNotesMode ? 'Notes ON' : 'Pencil'}</span>
+        </button>
+
+        <button
+          onClick={onUseHint}
+          disabled={hintsUsed >= 3 || isFinished}
+          className={`flex items-center justify-center space-x-1 sm:space-x-1.5 py-2 sm:py-2.5 rounded-xl border text-xs font-semibold transition-all touch-manipulation ${
+            hintsUsed < 3 && !isFinished
+              ? 'bg-amber-50/80 border-amber-200 text-amber-800 hover:bg-amber-100 hover:border-amber-300 active:scale-95 shadow-xs'
+              : 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
+          }`}
+          title={hintsUsed >= 3 ? 'All 3 hints used' : `Use Hint (${3 - hintsUsed} left)`}
+        >
+          <Lightbulb
+            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${
+              hintsUsed < 3 && !isFinished ? 'text-amber-500 fill-amber-300' : 'text-slate-300'
+            }`}
+          />
+          <span>Hint ({Math.max(0, 3 - hintsUsed)})</span>
         </button>
 
         <button
@@ -108,10 +129,11 @@ export default function Keypad({
             }
             onErase();
           }}
-          className="flex items-center justify-center space-x-1.5 sm:space-x-2 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation"
+          className="flex items-center justify-center space-x-1 sm:space-x-1.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-xs font-semibold transition-all active:scale-95 shadow-xs touch-manipulation"
+          title="Erase cell contents"
         >
           <Delete className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-          <span>Erase Cell</span>
+          <span>Erase</span>
         </button>
       </div>
 

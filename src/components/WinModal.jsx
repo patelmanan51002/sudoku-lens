@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Trophy, Clock, Calendar, Check, BookOpen, Sparkles, X } from 'lucide-react';
+import { Trophy, Clock, Calendar, Check, BookOpen, Sparkles, X, Lightbulb } from 'lucide-react';
 import { formatHumanDuration, formatDateTime } from '../utils/dateUtils';
 
 export default function WinModal({
@@ -78,6 +78,16 @@ export default function WinModal({
             </span>
             <span className="font-semibold text-slate-800">
               {formatDateTime(puzzle?.imageDate || puzzle?.createdAt)}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-500 flex items-center space-x-1.5">
+              <Lightbulb className="w-4 h-4 text-amber-500" />
+              <span>Hints Used:</span>
+            </span>
+            <span className="font-semibold text-slate-800">
+              {puzzle?.hintsUsed || 0} / 3
             </span>
           </div>
         </div>
