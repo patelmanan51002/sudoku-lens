@@ -247,15 +247,15 @@ export default function ControlPanel({
             }`}
             title={
               isComplete
-                ? 'Click to validate your completed Sudoku puzzle!'
-                : `Fill all ${remainingCount} remaining cells to validate.`
+                ? 'Auto-validating... Click to re-validate'
+                : `Fill all ${remainingCount} remaining cells to auto-validate.`
             }
           >
             <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
             <span className="truncate">
               {isComplete
-                ? 'Validate Sudoku (All Filled!)'
-                : `Validate (${remainingCount} empty ${remainingCount === 1 ? 'place' : 'places'} left)`}
+                ? 'Auto-Validating (All Filled)...'
+                : `Fill cells to auto-validate (${remainingCount} left)`}
             </span>
           </button>
         </div>

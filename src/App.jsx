@@ -527,9 +527,9 @@ export default function App() {
     });
   };
 
-  // Validate Sudoku (User requirement: option after all empty places got filled)
-  const handleValidate = () => {
-    const res = validateSudoku(grid);
+  // Validate Sudoku (called manually or automatically when board is completely filled)
+  const handleValidate = useCallback((boardToValidate = grid) => {
+    const res = validateSudoku(boardToValidate);
     if (res.isValid) {
       const finalTime = currentPuzzle.elapsedTime || 1;
       setIsTimerRunning(false);
@@ -543,7 +543,28 @@ export default function App() {
     } else {
       setValidationAlert({ type: 'error', message: res.message });
     }
-  };
+  }, [grid, currentPuzzle.elapsedTime, updateCurrentPuzzle]);
+
+  // Auto-validate Sudoku when all the cells are filled (no need to press button externally)
+  const lastAutoValidatedGridRef = useRef(null);
+
+  useEffect(() => {
+    lastAutoValidatedGridRef.current = null;
+  }, [activeId]);
+
+  useEffect(() => {
+    if (isFinished || !grid) return;
+
+    if (isBoardComplete(grid)) {
+      const gridKey = grid.map((r) => r.join('')).join('');
+      if (lastAutoValidatedGridRef.current !== gridKey) {
+        lastAutoValidatedGridRef.current = gridKey;
+        handleValidate(grid);
+      }
+    } else {
+      lastAutoValidatedGridRef.current = null;
+    }
+  }, [grid, isFinished, handleValidate]);
 
   // Select puzzle from library
   const handleSelectPuzzle = (id) => {
