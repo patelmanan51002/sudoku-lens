@@ -8,7 +8,7 @@ const DIFFICULTIES = [
     icon: Zap,
     color: 'emerald',
     badge: 'Beginner',
-    clues: '~35–42 clues',
+    clues: '~44–48 clues',
     description: 'Relaxed and gentle. Perfect for beginners and casual solving.'
   },
   {
@@ -17,7 +17,7 @@ const DIFFICULTIES = [
     icon: Shield,
     color: 'blue',
     badge: 'Popular',
-    clues: '~28–34 clues',
+    clues: '~36–40 clues',
     description: 'Balanced challenge. Requires standard row, column, and block logic.'
   },
   {
@@ -26,7 +26,7 @@ const DIFFICULTIES = [
     icon: Flame,
     color: 'amber',
     badge: 'Challenging',
-    clues: '~24–28 clues',
+    clues: '~30–34 clues',
     description: 'Intense deduction. Pencil notes and candidate elimination recommended.'
   },
   {
@@ -35,7 +35,7 @@ const DIFFICULTIES = [
     icon: Trophy,
     color: 'rose',
     badge: 'Master',
-    clues: '~20–24 clues',
+    clues: '~24–28 clues',
     description: 'Minimal clues. For seasoned Sudoku veterans seeking the ultimate test.'
   }
 ];
