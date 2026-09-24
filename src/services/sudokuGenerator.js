@@ -49,9 +49,61 @@ export function normalizeDifficulty(diff) {
 }
 
 /**
+ * Generous clue ranges to make each tier noticeably more approachable:
+ * - Easy: 44 - 48 clues (~4-5 clues per 3x3 block, relaxed casual solving)
+ * - Medium: 36 - 40 clues (~4 clues per 3x3 block, balanced cross-hatching)
+ * - Hard: 30 - 34 clues (~3-4 clues per block, thoughtful logic without being brutal)
+ * - Expert: 24 - 28 clues (advanced deduction)
+ */
+export const DIFFICULTY_CLUE_RANGES = {
+  easy: { min: 44, max: 48 },
+  medium: { min: 36, max: 40 },
+  hard: { min: 30, max: 34 },
+  expert: { min: 24, max: 28 }
+};
+
+/**
+ * Ensures the puzzle has a comfortable number of clues for the target difficulty
+ * by revealing additional cells from the verified solution if needed.
+ */
+export function enrichPuzzleClues(givenGrid, solutionGrid, targetMinClues, targetMaxClues) {
+  if (!solutionGrid || !Array.isArray(solutionGrid)) return givenGrid;
+  const grid = givenGrid.map((row) => [...row]);
+  let currentClues = countClues(grid);
+  const target = Math.floor(targetMinClues + Math.random() * (targetMaxClues - targetMinClues + 1));
+
+  if (currentClues >= target) return grid;
+
+  // Find all currently empty positions with known solutions
+  const emptyCells = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (grid[r][c] === 0 && solutionGrid[r] && solutionGrid[r][c] > 0) {
+        emptyCells.push({ r, c });
+      }
+    }
+  }
+
+  // Shuffle empty cells randomly for balanced board distribution
+  for (let i = emptyCells.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [emptyCells[i], emptyCells[j]] = [emptyCells[j], emptyCells[i]];
+  }
+
+  // Reveal clues from solution until target count is met
+  for (const cell of emptyCells) {
+    if (currentClues >= target) break;
+    grid[cell.r][cell.c] = solutionGrid[cell.r][cell.c];
+    currentClues++;
+  }
+
+  return grid;
+}
+
+/**
  * Verifies that a generated puzzle strictly satisfies the requested difficulty:
  * - Exact difficulty tag matching
- * - Clue count within standard range for the tier
+ * - Clue count within standard relaxed range for the tier
  * - Valid 9x9 structure with non-empty board
  */
 export function verifySudokuDifficulty(puzzleData, requestedDifficulty) {
@@ -68,25 +120,24 @@ export function verifySudokuDifficulty(puzzleData, requestedDifficulty) {
 
   switch (normalized) {
     case 'easy':
-      // Easy must have plenty of clues for casual solving (>= 32 clues)
-      return clues >= 32 && clues <= 55;
+      // Relaxed Easy: plenty of clues (42 - 56 clues)
+      return clues >= 42 && clues <= 56;
     case 'medium':
-      // Medium balanced logic (27 - 35 clues)
-      return clues >= 27 && clues <= 35;
+      // Relaxed Medium: balanced logic (35 - 41 clues)
+      return clues >= 35 && clues <= 41;
     case 'hard':
-      // Hard deduction (23 - 29 clues)
-      return clues >= 23 && clues <= 29;
+      // Approachable Hard: deduction without excessive guessing (29 - 34 clues)
+      return clues >= 29 && clues <= 34;
     case 'expert':
-      // Minimal clues for master solver (17 - 25 clues)
-      return clues >= 17 && clues <= 25;
+      // Expert: (22 - 28 clues)
+      return clues >= 22 && clues <= 28;
     default:
-      return clues >= 17;
+      return clues >= 20;
   }
 }
 
 /**
- * Fetches a random Sudoku from Dosuku API with a strict timeout and difficulty verification.
- * If the API returns a difficulty different from what the user requested, it is rejected.
+ * Fetches a random Sudoku from Dosuku API with strict difficulty verification and clue enrichment.
  */
 async function fetchFromDosukuApi(requestedDifficulty = 'medium', timeoutMs = 2500) {
   const normalized = normalizeDifficulty(requestedDifficulty);
@@ -105,10 +156,14 @@ async function fetchFromDosukuApi(requestedDifficulty = 'medium', timeoutMs = 25
 
     if (gridObj && Array.isArray(gridObj.value)) {
       const apiDiff = (gridObj.difficulty || '').toLowerCase();
-      // CRITICAL: Strictly verify that the API's returned difficulty matches what the user selected!
       if (apiDiff === normalized) {
+        const range = DIFFICULTY_CLUE_RANGES[normalized] || DIFFICULTY_CLUE_RANGES.medium;
+        const enrichedGiven = gridObj.solution
+          ? enrichPuzzleClues(gridObj.value, gridObj.solution, range.min, range.max)
+          : gridObj.value;
+
         const candidate = {
-          givenGrid: gridObj.value,
+          givenGrid: enrichedGiven,
           solutionGrid: gridObj.solution || null,
           difficulty: normalized,
           source: 'Dosuku API'
@@ -117,10 +172,9 @@ async function fetchFromDosukuApi(requestedDifficulty = 'medium', timeoutMs = 25
           return candidate;
         }
       }
-      // If API returned a different difficulty than requested, reject it so verified generator takes over!
     }
   } catch (err) {
-    // Timeout or network error - gracefully fall back
+    // Timeout or network error - gracefully fall back to local engine
   } finally {
     clearTimeout(timer);
   }
@@ -128,17 +182,22 @@ async function fetchFromDosukuApi(requestedDifficulty = 'medium', timeoutMs = 25
 }
 
 /**
- * Generates a verified Sudoku puzzle using sudoku-gen (instant, offline & guaranteed difficulty)
+ * Generates a verified Sudoku puzzle using sudoku-gen with relaxed clue enrichment.
  */
 function generateVerifiedLocalSudoku(requestedDifficulty = 'medium') {
   const normalized = normalizeDifficulty(requestedDifficulty);
+  const range = DIFFICULTY_CLUE_RANGES[normalized] || DIFFICULTY_CLUE_RANGES.medium;
 
-  // Attempt up to 5 generations to ensure full verification
+  // Attempt up to 5 generations
   for (let attempt = 0; attempt < 5; attempt++) {
     const raw = getSudoku(normalized);
+    const given = stringToGrid(raw.puzzle);
+    const solution = stringToGrid(raw.solution);
+    const enrichedGiven = enrichPuzzleClues(given, solution, range.min, range.max);
+
     const candidate = {
-      givenGrid: stringToGrid(raw.puzzle),
-      solutionGrid: stringToGrid(raw.solution),
+      givenGrid: enrichedGiven,
+      solutionGrid: solution,
       difficulty: normalized,
       source: 'Sudoku-Gen Engine'
     };
@@ -148,13 +207,51 @@ function generateVerifiedLocalSudoku(requestedDifficulty = 'medium') {
     }
   }
 
-  // Fallback to direct generation
+  // Fallback to direct enriched generation
   const fallbackRaw = getSudoku(normalized);
+  const fallbackGiven = stringToGrid(fallbackRaw.puzzle);
+  const fallbackSolution = stringToGrid(fallbackRaw.solution);
   return {
-    givenGrid: stringToGrid(fallbackRaw.puzzle),
-    solutionGrid: stringToGrid(fallbackRaw.solution),
+    givenGrid: enrichPuzzleClues(fallbackGiven, fallbackSolution, range.min, range.max),
+    solutionGrid: fallbackSolution,
     difficulty: normalized,
     source: 'Sudoku-Gen Engine'
+  };
+}
+
+/**
+ * Creates the initial fresh Easy Sudoku puzzle for first-time users.
+ * Directly replaces any old sample / Daily Newspaper puzzles.
+ */
+export function createInitialEasyPuzzle() {
+  const raw = getSudoku('easy');
+  const given = stringToGrid(raw.puzzle);
+  const solution = stringToGrid(raw.solution);
+  const enrichedGiven = enrichPuzzleClues(given, solution, 44, 48);
+  const current = enrichedGiven.map((row) => [...row]);
+  const now = getSystemDateTimeISO();
+  const puzzleNum = Math.floor(1000 + Math.random() * 9000);
+  const newId = `sudoku-easy-${Date.now()}`;
+
+  return {
+    id: newId,
+    title: `Easy Sudoku #${puzzleNum}`,
+    difficulty: 'easy',
+    imageDate: now,
+    createdAt: now,
+    updatedAt: now,
+    thumbnailUrl: null,
+    givenGrid: enrichedGiven,
+    currentGrid: current,
+    solutionGrid: solution,
+    notes: {},
+    history: [],
+    redoStack: [],
+    status: 'Untouched',
+    elapsedTime: 0,
+    completionTime: null,
+    hasCheckerboard: true,
+    engineSource: 'Sudoku-Gen Engine'
   };
 }
 

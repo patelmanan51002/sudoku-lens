@@ -18,7 +18,7 @@ export default function Navbar({
     { id: 'play', label: 'Play', icon: Grid3X3 },
     { id: 'new', label: 'New Game', shortLabel: 'New', icon: Sparkles, isAction: true },
     { id: 'create', label: 'Create Custom', shortLabel: 'Create', icon: PenTool },
-    { id: 'library', label: 'Archive', shortLabel: 'Archive', icon: BookOpen }
+    { id: 'library', label: 'Library', shortLabel: 'Library', icon: BookOpen }
   ];
 
   const handleNavClick = (item) => {

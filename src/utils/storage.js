@@ -1,6 +1,5 @@
-import { SAMPLE_PUZZLE_GIVEN } from './sudokuSolver';
 import { getSystemDateTimeISO } from './dateUtils';
-import sampleImageSrc from '../assets/sample_puzzle.png';
+import { createInitialEasyPuzzle } from '../services/sudokuGenerator';
 
 const STORAGE_KEY_PUZZLES = 'sudoku_app_puzzles_v2';
 const STORAGE_KEY_ACTIVE = 'sudoku_app_active_id_v2';
@@ -9,30 +8,10 @@ const STORAGE_KEY_SETTINGS = 'sudoku_app_settings_v2';
 export const SAMPLE_PUZZLE_ID = 'sample-puzzle-1';
 
 /**
- * Creates default sample puzzle initialized with the uploaded image
+ * Creates default initial easy puzzle for first-time users
  */
 export function createSamplePuzzle() {
-  const given = SAMPLE_PUZZLE_GIVEN.map(row => [...row]);
-  const current = SAMPLE_PUZZLE_GIVEN.map(row => [...row]);
-  const now = getSystemDateTimeISO();
-
-  return {
-    id: SAMPLE_PUZZLE_ID,
-    title: 'Daily Newspaper Sudoku',
-    imageDate: now,
-    createdAt: now,
-    updatedAt: now,
-    thumbnailUrl: sampleImageSrc,
-    givenGrid: given,
-    currentGrid: current,
-    notes: {},
-    history: [],
-    redoStack: [],
-    status: 'Untouched',
-    elapsedTime: 0,
-    completionTime: null,
-    hasCheckerboard: true
-  };
+  return createInitialEasyPuzzle();
 }
 
 /**
@@ -60,26 +39,34 @@ export function determineStatus(givenGrid, currentGrid, isFinished = false, elap
 }
 
 /**
- * Loads all puzzles from localStorage
+ * Loads all puzzles from localStorage.
+ * If empty or only contains legacy sample puzzle, initializes with a fresh Easy Sudoku.
  */
 export function getSavedPuzzles() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_PUZZLES);
     if (!raw) {
-      const initial = [createSamplePuzzle()];
+      const initial = [createInitialEasyPuzzle()];
       localStorage.setItem(STORAGE_KEY_PUZZLES, JSON.stringify(initial));
       return initial;
     }
-    const puzzles = JSON.parse(raw);
+    let puzzles = JSON.parse(raw);
+    // Remove the legacy Daily Newspaper Sudoku sample if present
+    if (Array.isArray(puzzles)) {
+      puzzles = puzzles.filter(
+        (p) => p.id !== SAMPLE_PUZZLE_ID && p.title !== 'Daily Newspaper Sudoku'
+      );
+    }
     if (!Array.isArray(puzzles) || puzzles.length === 0) {
-      const initial = [createSamplePuzzle()];
+      const initial = [createInitialEasyPuzzle()];
       localStorage.setItem(STORAGE_KEY_PUZZLES, JSON.stringify(initial));
       return initial;
     }
+    localStorage.setItem(STORAGE_KEY_PUZZLES, JSON.stringify(puzzles));
     return puzzles;
   } catch (err) {
     console.error('Failed to load puzzles from storage:', err);
-    return [createSamplePuzzle()];
+    return [createInitialEasyPuzzle()];
   }
 }
 
@@ -179,7 +166,16 @@ export function updatePuzzleDateTime(id, newDateTimeISO) {
  * Active puzzle ID storage
  */
 export function getActivePuzzleId() {
-  return localStorage.getItem(STORAGE_KEY_ACTIVE) || SAMPLE_PUZZLE_ID;
+  const active = localStorage.getItem(STORAGE_KEY_ACTIVE);
+  if (active && active !== SAMPLE_PUZZLE_ID) {
+    return active;
+  }
+  const puzzles = getSavedPuzzles();
+  const firstId = puzzles[0]?.id || '';
+  if (firstId) {
+    localStorage.setItem(STORAGE_KEY_ACTIVE, firstId);
+  }
+  return firstId;
 }
 
 export function setActivePuzzleId(id) {
