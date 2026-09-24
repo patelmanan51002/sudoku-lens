@@ -12,7 +12,8 @@ export default function Keypad({
   isTimerRunning = false,
   onStartTimer,
   useNativeKeyboard = false,
-  onToggleNativeKeyboard
+  onToggleNativeKeyboard,
+  selectedDigit = null
 }) {
   if (isFinished) {
     return (
@@ -44,6 +45,7 @@ export default function Keypad({
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => {
           const count = digitCounts[num];
           const isComplete = count >= 9;
+          const isSelectedMatch = autoHighlight && selectedDigit === num;
 
           return (
             <button
@@ -58,6 +60,8 @@ export default function Keypad({
               className={`relative flex flex-col items-center justify-center py-2 sm:py-3 rounded-xl border font-bold transition-all active:scale-90 shadow-xs touch-manipulation ${
                 !isTimerRunning && !isFinished
                   ? 'bg-slate-50 border-slate-200 text-slate-400 opacity-80'
+                  : isSelectedMatch
+                  ? 'bg-amber-100 border-amber-400 text-amber-950 ring-2 ring-amber-400 font-black shadow-sm'
                   : isComplete && autoHighlight
                   ? 'bg-slate-100 border-slate-200 text-slate-300'
                   : 'bg-white border-slate-200 text-slate-800 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600'
@@ -67,7 +71,11 @@ export default function Keypad({
               {autoHighlight && (
                 <span
                   className={`text-[8px] sm:text-[10px] font-semibold mt-0.5 leading-none ${
-                    isComplete ? 'text-slate-300' : 'text-slate-400'
+                    isSelectedMatch
+                      ? 'text-amber-800 font-bold'
+                      : isComplete
+                      ? 'text-slate-300'
+                      : 'text-slate-400'
                   }`}
                 >
                   {9 - count}

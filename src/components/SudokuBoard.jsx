@@ -196,6 +196,7 @@ export default function SudokuBoard({
                     isConflict={isConflict}
                     isCheckerBlue={isCheckerBlue}
                     autoHighlight={autoHighlight}
+                    selectedValue={selectedValue}
                     onClick={() => {
                       if (!isTimerRunning && !isFinished) {
                         onStartTimer?.();

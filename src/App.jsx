@@ -863,6 +863,7 @@ export default function App() {
               onStartTimer={handleStartTimer}
               useNativeKeyboard={useNativeKeyboard}
               onToggleNativeKeyboard={setUseNativeKeyboard}
+              selectedDigit={selectedCell ? grid?.[selectedCell.r]?.[selectedCell.c] : null}
             />
           </div>
         )}

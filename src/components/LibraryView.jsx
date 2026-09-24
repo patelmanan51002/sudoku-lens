@@ -310,13 +310,16 @@ export default function LibraryView({
                         {/* Progress or Completion Time */}
                         <div className="space-y-1.5 mb-3">
                           {puzzle.status === 'Finished' ? (
-                            <div className="flex items-center justify-between text-xs font-semibold text-emerald-700">
-                              <span>Completed Time:</span>
-                              <span className="font-mono">
+                            <div className="flex items-center justify-between text-xs font-semibold text-emerald-700 py-1.5 px-2 bg-emerald-50 rounded-lg border border-emerald-100">
+                              <span className="flex items-center space-x-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span>Completed Time:</span>
+                              </span>
+                              <span className="font-mono font-bold text-emerald-800">
                                 {formatHumanDuration(puzzle.completionTime || puzzle.elapsedTime)}
                               </span>
                             </div>
-                          ) : (
+                          ) : puzzle.status === 'In Progress' ? (
                             <>
                               <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
                                 <span>Progress:</span>
@@ -328,18 +331,22 @@ export default function LibraryView({
                                   style={{ width: `${Math.round((filled / 81) * 100)}%` }}
                                 />
                               </div>
+                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                                <span className="flex items-center space-x-1">
+                                  <Clock className="w-3 h-3 text-amber-500" />
+                                  <span>Time spent:</span>
+                                </span>
+                                <span className="font-mono font-medium text-slate-700">
+                                  {formatSeconds(puzzle.elapsedTime || 0)}
+                                </span>
+                              </div>
                             </>
+                          ) : (
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 py-1">
+                              <span>Ready to play</span>
+                              <span>{filled} clues</span>
+                            </div>
                           )}
-
-                          <div className="flex items-center justify-between text-[11px] text-slate-400">
-                            <span className="flex items-center space-x-1">
-                              <Clock className="w-3 h-3" />
-                              <span>Time spent:</span>
-                            </span>
-                            <span className="font-mono font-medium text-slate-600">
-                              {formatSeconds(puzzle.elapsedTime || 0)}
-                            </span>
-                          </div>
                         </div>
                       </div>
 
